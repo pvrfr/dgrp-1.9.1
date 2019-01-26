@@ -128,8 +128,12 @@ static int dgrp_start(void)
 	GLBL(comm_debug) = comm_debug;
 	GLBL(ports_debug) = ports_debug;
 
-	dgrp_create_class_sysfs_files();
-	dgrp_proc_register_basic();
+	rc = dgrp_create_class_sysfs_files();
+	if (rc) {
+	  dbg_trace (("%s:%d, dgrp ERROR exit, rc %x\n", __func__, __LINE__, rc));
+	  return rc;
+	}
+	rc = dgrp_proc_register_basic();
 
 	return rc;
 }

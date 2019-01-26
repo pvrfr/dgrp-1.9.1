@@ -38,7 +38,9 @@ static char *version = "$Id: ditty.c,v 1.12 2004/10/26 19:42:04 scottk Exp $";
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <curses.h>
 #include <termio.h>
+#include <term.h>
 #include <sys/errno.h>
 #include <sys/ioctl.h>
 
@@ -216,6 +218,7 @@ long fbaud( int baud )
  *  Routine to expand curses definitions.		*
  ********************************************************/
 
+unsigned char
 getcode(dest, src)
 char *src ;	    /* Source string	*/
 char *dest ;		/* Destination string	*/
@@ -311,6 +314,7 @@ char *dest ;		/* Destination string	*/
  *  Routine to print a string unambiguously             *
  ********************************************************/
 
+void
 stprint(str, len) 
 char *str ;         /* String to print  */
 int len ;           /* String length    */
@@ -371,7 +375,7 @@ int digiget(int fd, digi_t *digi)
 void ditty(int fd) /* File descriptor of tty */
 { /* Begin ditty */
 
-	int		 i, modem, eol, baud;
+        int		 i, modem, eol, baud;
 	digi_t		 di;
 	digiflow_t	 dflow;
 	struct termio	 tbuf;
@@ -634,8 +638,7 @@ void ditty(int fd) /* File descriptor of tty */
 			perror(STTY);
 			exit(2);
 		}
-
-		while (wait((union wait *)0) != pid) ;
+		while (wait((int *)0) != pid) ;
 	}
 
 	eol = 0 ;
@@ -814,11 +817,13 @@ void ditty(int fd) /* File descriptor of tty */
 	fflush(outdev);
 
 	if (print == 1)	{
-		(void) system(STTY) ;
+	  if (system(STTY))
+	    perror (STTY);
 	}
 
 	if (print == 2)	{
-		(void) system(STTYA) ;
+	  if (system(STTYA))
+	    perror (STTYA);
 	}
 
 } /* End ditty */

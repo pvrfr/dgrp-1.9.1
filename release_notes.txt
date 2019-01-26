@@ -1,7 +1,7 @@
                       Release Notes PN 93000359_X6P
 
                  Digi RealPort Driver Package for Linux
-                            dgrp-1.9-36.i386.rpm
+                            dgrp-1.9.1-36.i386.rpm
 
                        Tested Linux Distributions:
                  Red Hat Enterprise Linux 2.1, 3, 4, 5.x, 6.x, 7.x
@@ -10,17 +10,18 @@
        Mandriva Linux 8.2, 9.0, 9.1, 9.2, 10.0, 10.1, 2006, 2007.1, 2008
             SuSE 8.1, 8.2, 9.0, 9.1, 9.2, 9.3, 10.0, 10.1, 10.2, 11.1, 11.2
                            Debian 3.0.r1, 3.1, 4, 6.0
-                        Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04
+                        Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04. 18.04
 
 
                          Linux Kernels supported:
                             2.4.x (UP and SMP)
                             2.6.x (UP and SMP)
                             3.x.x (UP and SMP)
+                            4.x.x (UP and SMP)
 
                        RPM Part Number 40002086_X6P
 
-                              02/08/2016
+                              01/24/2019
 
 
   CONTENTS
@@ -61,7 +62,7 @@
      o Mandriva Linux 8.2, 9.0, 9.1, 9.2, 10.0, 10.1, 2006, 2007.1, 2008
      o SuSE 8.1, 8.2, 9.0, 9.1, 9.2, 9.3, 10.0, 10.1, 10.2, 11.1, 11.2
      o Debian 3.0.r1, 3.1, 4, 6
-     o Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04
+     o Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04, 18.04
      
      NOTE: Because of the rapid rate of releases from each respective
            Vendor, the tested/supported list above quickly becomes
@@ -315,6 +316,9 @@
 
 
   7. HISTORY
+    o Version 1.9.1-35
+      	  o Ported to the 4.X.X kernel.
+	  o Cleaned up compile messages for the user space programs.
     o Version 1.9-35
           o Previously there was a time window at the beginning of port
             opens during which "dgrp_cfg_node" could mistakenly conclude

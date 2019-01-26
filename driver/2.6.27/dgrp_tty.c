@@ -61,6 +61,9 @@
 #include <linux/serial.h>
 #include <linux/termios.h>
 #include <linux/delay.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,15,0)
+#include <linux/sched/signal.h>
+#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 #include <linux/slab.h>
 #endif
@@ -782,7 +785,11 @@ if (ttylock) tty_lock(ch->port.tty);
  * This function is just used as a callback for timeouts
  * waiting on the ch_sleep flag.
  */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 static void wake_up_drp_sleep_timer(unsigned long ptr)
+#else
+  static void wake_up_drp_sleep_timer(struct timer_list *ptr)
+#endif
 {
 	struct ch_struct *ch = (struct ch_struct *) ptr;
 	if (ch)
@@ -811,9 +818,14 @@ static void drp_my_sleep(struct ch_struct *ch)
 	 * unset the uninterruptable state in 1 second.
 	 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	init_timer(&drp_wakeup_timer);
 	drp_wakeup_timer.function = wake_up_drp_sleep_timer;
 	drp_wakeup_timer.data = (unsigned long) ch;
+#else
+	timer_setup(&drp_wakeup_timer, wake_up_drp_sleep_timer,
+		    (unsigned long)ch);
+#endif
 	drp_wakeup_timer.expires = jiffies + (1 * HZ);
 	add_timer(&drp_wakeup_timer);
 
@@ -1708,7 +1720,7 @@ static void dgrp_tty_close(struct tty_struct *tty, struct file *file)
 		/* (un->un_tty)->device = 0; */
 
 		if (ch->ch_state == CS_READY)
-			ch->ch_state = CS_SEND_CLOSE;
+		        ch->ch_state = CS_SEND_CLOSE;
 	}
 
 	/*

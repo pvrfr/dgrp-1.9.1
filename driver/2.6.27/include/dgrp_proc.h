@@ -48,6 +48,6 @@
  *****************************************************************************/
 
 void dgrp_proc_unregister_all(void);
-void dgrp_proc_register_basic(void);
+extern int dgrp_proc_register_basic(void);
 
 extern struct file_operations dgrp_proc_file_ops;

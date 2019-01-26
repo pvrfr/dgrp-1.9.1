@@ -41,7 +41,6 @@
 
 #define RP_TCP_PORT     771
 #define ELS_TCP_PORT    10001
-#define FASCMDSZ        8
 
 
 typedef enum { ALL, FAS, NETCX } RESET_TYPE;
@@ -272,7 +271,7 @@ int reset_elmodule(struct hostent *ipinfo, int rp_port)
     return(-1);
   }
   
-  bzero((char *)&reset_rsp, FASCMDSZ);
+  bzero((char *)&reset_rsp, sizeof(rsp_global));
   if (sock_read(s, (caddr_t)&reset_rsp, FASCMDSZ) < 0) {
     perror("read");
     close(s);

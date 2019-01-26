@@ -234,12 +234,15 @@ StartCurses(void)
 	keypad (stdscr, TRUE);
 	start_color ();
 
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+
 	if ((int)(tigetstr ("smul")) > 0)
 		HasAttr |= A_UNDERLINE;
 	if ((int)(tigetstr ("rev")) > 0)
 		HasAttr |= A_REVERSE;
 	if ((int)(tigetstr ("bold")) > 0)
 		HasAttr |= A_BOLD;
+#pragma GCC diagnostic pop
 
 	KEY_LINE = (LINES >= 24) ? LINES - 1 : 23;
 }

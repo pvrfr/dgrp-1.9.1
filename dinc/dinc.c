@@ -20,7 +20,7 @@
 #include "dinc.h"
 
 static char dinc_sccs[] = "@(#) $Id: dinc.c,v 1.29 2010/08/06 13:50:34 sethb Exp $ Copyright (C) 1995-1998 Digi International Inc., All Rights Reserved";
-
+int next_baud(int dir);
 
 #if !defined(MAX)
 # define MAX(x,y)		((x) > (y) ? (x) : (y))
@@ -860,9 +860,7 @@ void open_tty() {
  *	Just prints a message saying the device is busy.
  */
 void tty_open_timeout(int arg) {
-	/* note: only passing 'arg' to printif to shut up compiler */
-	printf("Timed out: port busy or another process is blocked in open.\n",
-		   arg);
+        printf("Timed out: port busy or another process is blocked in open.\n");
 	exit(1);
 }
 
@@ -1488,12 +1486,12 @@ void bail(int code) {
 	
 	/* if we changed user terminal params, restore */
 	if(user_setup_saved)  {
-		restore_user_params();
-    char *closing = "DINC\007 closing...\n";
-		printf(closing);
-    if (logfd > -1) {
-      write(logfd, closing, strlen(closing));
-    }
+	  restore_user_params();
+	  char *closing = "DINC\007 closing...\n";
+	  printf("%s", closing);
+	  if (logfd > -1) {
+	    write(logfd, closing, strlen(closing));
+	  }
 	}
 	
 	if(init_port == TRUE) { 

@@ -118,8 +118,12 @@ DPAFindDevices(void)
 		return -1;
 
 	while (!feof(fp)) {
-		fgets(buff, 1000, fp);
+	        char  *rp;
 
+		rp = fgets(buff, 1000, fp);
+		if (rp == NULL)
+		  perror ("EOF");
+		
 		if (buff[0] == '#')
 			continue;
 
@@ -186,14 +190,14 @@ DPAFindDevices(void)
 
 		device_info[num_devices].major = 0;
 
-		sprintf(device_info[num_devices].host, ip);
+		sprintf(device_info[num_devices].host, "%s", ip);
 
 		device_info[num_devices].port = atoi(ipport);
 		if (device_info[num_devices].port == 0)
 			device_info[num_devices].port = 771;
 
-		sprintf(device_info[num_devices].encrypt, encrypt);
-		sprintf(device_info[num_devices].wanspeed, wanspeed);
+		sprintf(device_info[num_devices].encrypt,  "%s", encrypt);
+		sprintf(device_info[num_devices].wanspeed,  "%s", wanspeed);
 
 		device_info[num_devices].unit_number = num_devices;
 

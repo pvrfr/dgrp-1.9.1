@@ -118,8 +118,10 @@ tty_close(int fd, struct termios *sv_tios)
 int
 test_send(char *test_data, int len, int fd)
 {
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 	int ret;
 	ret = write(fd, test_data, len);
+#pragma GCC diagnostic pop
 	return 0;
 }
 

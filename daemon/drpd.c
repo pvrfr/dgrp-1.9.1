@@ -116,7 +116,6 @@ digi_speed_t speed;				/* Speed structure */
 
 int ipv6;				/* Should the connection be ipv6 enabled? */
 
-
 #define LOGPRI (LOG_INFO | LOG_DAEMON)
 
 
@@ -136,6 +135,43 @@ int maxFD;				/* Maximum of two above */
 
 #define assert(x) if (!(x)) *(volatile long *)-1 = 0
 
+void
+prt_hex(unsigned char *buf, int cnt) {
+  int i = 0;
+  int j = 0;
+  char cbuf[60];
+  char abuf[20];
+  
+  if (cnt == 0)
+      return;
+    
+  sprintf(cbuf, "%04x: ", i);
+  
+  do {
+    
+    sprintf(&cbuf[strlen(cbuf)], "%02x ", buf[i]);
+
+    if ((buf[i] < 0x20) || (buf[i] > 0x7F))
+      abuf[j] = '.';
+    else
+      abuf[j] = buf[i];
+
+    abuf[j + 1] = 0;
+    
+    i++;
+    j++;
+    
+    if (i >= cnt)
+      break;
+    
+    if ((i & 0x0f) == 0) {
+      printf("%s   %s\n", cbuf, abuf);
+      sprintf(cbuf, "%04x: ", i);
+      j = 0;
+    }
+  } while (1);
+  printf("%s   %s\n", cbuf, abuf);
+}
 
 /************************************************************************
  * Gets a temp string for use with printfs and such.
@@ -813,12 +849,15 @@ long post_connection_check(SSL *ssl, char *host, char *resolvedhost)
 		    CONF_VALUE *nval;
 		    X509V3_EXT_METHOD *meth;
 
-		    if (!(meth = X509V3_EXT_get(ext)))
+		    if (!(meth = (X509V3_EXT_METHOD *)X509V3_EXT_get(ext)))
 			break;
 		    data = ext->value->data;
 
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 		    val = meth->i2v(meth,
-			meth->d2i(NULL, &data, ext->value->length), NULL);
+				    meth->d2i(NULL, &data, ext->value->length), NULL);
+#pragma GCC diagnostic pop
+
 
 		    for (j = 0; j < sk_CONF_VALUE_num(val); j++) {
 			nval = sk_CONF_VALUE_value(val, j);
@@ -934,7 +973,7 @@ void copyData()
 
         OpenSSL_add_ssl_algorithms();
 
-        meth = TLSv1_client_method();
+        meth = (SSL_METHOD *)TLSv1_client_method();
 
         ctx = SSL_CTX_new(meth);
 
@@ -1172,8 +1211,10 @@ void copyData()
 	    if (debug >= 2)
 		fprintf(stderr, "Read %ld bytes from the %s Server.\n",
 		    (long int) rcount, (secure ? "Secure" : ""));
+	    if (debug >= 3)
+		prt_hex(buf, rcount);
 
-	    serverlastreadtime = time(NULL);
+	      serverlastreadtime = time(NULL);
 
 	    if (rcount <= 0)
 	    {
@@ -1247,6 +1288,8 @@ void copyData()
 		fprintf(stderr,
 			"Read %ld bytes from network device\n",
 			(long int) rcount);
+	    if (debug >= 3)
+		prt_hex(buf, rcount);
 
 	    if (rcount < 0)
 	    {
@@ -1321,6 +1364,8 @@ void copyData()
 	    if (debug >= 2)
 	        fprintf(stderr, "Write %ld bytes to %s Server\n",
 		    (long int) wcount, (secure ? "Secure" : ""));
+	    if (debug >= 3)
+		prt_hex(buf, wcount);
 
 
 	    /*
@@ -1616,9 +1661,13 @@ void mainLoop()
 	if (debug >= 1)
 	{
 	    char buf[100];
+	    char *rp;
+	    
 	    fprintf(stdout, "Hit enter to reconnect: ");
 	    fflush(stdout);
-	    fgets(buf, sizeof(buf)-1, stdin);
+	    rp = fgets(buf, sizeof(buf)-1, stdin);
+	    if (rp == NULL)
+	      perror ("no char");
 	}
 	else
 	{
@@ -1664,7 +1713,13 @@ int main(int argc, char **argv)
 
     deviceFD = open(device, O_RDWR);
 
-    if (deviceFD < 0)
+    if (debug >= 3)
+      {
+	fprintf(stderr,	"Open device %s, FD %x, progName  %s\n", device, deviceFD, progName);
+      }
+    
+
+	if (deviceFD < 0)
     {
 	syslog(LOGPRI,
 	       "%s Cannot open %s - %m\n",
@@ -1710,6 +1765,8 @@ int main(int argc, char **argv)
 
     if ((debug == 0) && (nondaemon == 0))
     {
+      int  rc;
+      
 	switch (fork())
 	{
 	case 0:
@@ -1726,7 +1783,11 @@ int main(int argc, char **argv)
 	}
 
 	setsid();
-	nice(-10);
+	
+	errno = 0;
+	rc = nice(-10);
+	if (errno || (rc == -1))
+	  perror("nice call failed");
 
         /*
          * The child no longer needs "stdin", "stdout", or "stderr",

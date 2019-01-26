@@ -57,7 +57,7 @@ static struct proc_dir_entry *ProcDgRp;
  *	Register the basic /proc/dgrp files that appear whenever
  *	the driver is loaded.
  */
-void
+int
 dgrp_proc_register_basic(void)
 {
 	/*
@@ -68,7 +68,11 @@ dgrp_proc_register_basic(void)
 #else
 	ProcDgRp = proc_mkdir(PROCSTR, NULL);
 #endif
-	dgrp_specproc_init(ProcDgRp);
+	if (ProcDgRp) {
+	  dgrp_specproc_init(ProcDgRp);
+	  return 0;
+	}
+	return EINVAL;
 }
 
 
