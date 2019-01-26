@@ -55,6 +55,7 @@
 #include "dgrp_common.h"
 #include "dgrp_tty.h"
 #include <linux/sched.h>	/* For in_egroup_p() */
+#include <linux/sched/signal.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 #include <linux/slab.h>	/* For in_egroup_p() */
 #endif
@@ -554,7 +555,7 @@ inline int nd_struct_del(struct nd_struct *entry)
 
 #define TRACE_TO_CONSOLE
 
-#define SZ_MAXMSG     1024
+#define SZ_MAXMSG     900
 
 #if !defined(TRACE_TO_CONSOLE)
 void dgrp_tracef(const char *fmt, ...)
@@ -621,6 +622,7 @@ void dgrp_remove_proc_entry(struct proc_dir_entry *pde)
 void dgrp_remove_proc_entry(struct nd_struct *nd, struct proc_dir_entry *parent)
 {
 	char buf[3];
+
 	ID_TO_CHAR(nd->nd_ID, buf);
 	remove_proc_entry(buf, parent);
 
