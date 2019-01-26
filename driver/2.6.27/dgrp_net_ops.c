@@ -89,10 +89,14 @@ static long   node_active_count;	/* one count for each open or
 static long   poll_round;		/* Timer rouding factor */
 static ulong poll_time;			/* Time of next poll */
 
-static void poll_handler(ulong dummy);
 static void poll_start_timer(ulong time);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
+static void poll_handler(ulong dummy);
 static struct timer_list poll_timer = { function: poll_handler };
-
+#else
+static void poll_handler(struct timer_list *dummy);
+static struct timer_list poll_timer;
+#endif
 
 /*
  *  Generic helper function declarations
@@ -141,7 +145,6 @@ static struct inode_operations net_inode_ops = {
 #endif
 
 
-
 /*****************************************************************************
 *
 * Function:
@@ -177,7 +180,11 @@ int register_net_device(struct nd_struct *node, struct proc_dir_entry *root)
 	if (!globals_initialized) {
 		globals_initialized = 1;
 		spin_lock_init(&GLBL(poll_lock));
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 		init_timer(&poll_timer);
+#else
+		timer_setup(&poll_timer, poll_handler, 0);
+#endif
 	}
 
 	ID_TO_CHAR(node->nd_ID, buf);
@@ -945,11 +952,11 @@ static void dgrp_chan_count(struct nd_struct *nd, int n)
 			rbuf = kmalloc(RBUF_MAX, GFP_KERNEL);
 
 			if (tbuf == 0 || rbuf == 0) {
-				if (tbuf != 0)
-					kfree(tbuf);
-
+			        if (tbuf != 0)
+				        kfree(tbuf);
+				  
 				if (rbuf != 0)
-					kfree(rbuf);
+				        kfree(rbuf);
 
 /* TODO : historical locking placeholder */
 /*
@@ -1437,7 +1444,7 @@ static int dgrp_net_open(struct inode *inode, struct file *file)
 #endif
 
 	dbg_net_trace(OPEN, ("net open(%p) start\n", file->private_data));
-
+	
 	rtn = try_module_get(THIS_MODULE);
 	if (!rtn) {
 		dbg_net_trace(OPEN, ("net open(%p) failed, could not get and increment module count\n",
@@ -1831,7 +1838,6 @@ static int dgrp_send(struct nd_struct *nd, long tmax)
 	tchan = 0;
 
 	memset(tdata, '\0', sizeof(tdata));
-
 
 	/*
 	 * If there are any outstanding requests to be serviced, service them here.
@@ -2991,6 +2997,7 @@ static ssize_t dgrp_net_read(struct file *file, char *buf, size_t count, loff_t 
 	 *  Get the node pointer, and quit if it doesn't exist.
 	 */
 	nd = (struct nd_struct *)(file->private_data);
+
 	if (!nd) {
 		rtn = -ENXIO;
 		goto done;
@@ -3223,7 +3230,7 @@ static void dgrp_receive(struct nd_struct *nd)
 	uchar *buf;
 	uchar *b;
 	uchar *dbuf;
-	char *error;
+	char *error = NULL;
 	long port;
 	long dlen;
 	long plen;
@@ -3252,7 +3259,7 @@ static void dgrp_receive(struct nd_struct *nd)
 		int n1 = b[0] & 0x0f;
 
 		dbg_net_trace(INPUT, ("net receive(%d) %d %d\n",
-					b - buf, n0, n1));
+				        b - buf, n0, n1));
 
 		if (n0 <= 12) {
 			port = (nd->nd_rx_module << 4) + n1;
@@ -3546,7 +3553,7 @@ data:
 			 */
 
 			case 11:
-				if (remain < (plen = 6))
+			        if (remain < (plen = 6))
 					goto done;
 
 				nd->nd_tx_work = 1;
@@ -3905,8 +3912,8 @@ check_query:
 		/*
 		 *  Handle Events.
 		 */
-
 		case 12:
+
 			if (remain < (plen = 4))
 				goto done;
 
@@ -4213,7 +4220,7 @@ check_query:
 				goto prot_error;
 
 			default:
-				goto decode_error;
+			        goto decode_error;
 			}
 			break;
 
@@ -4235,7 +4242,7 @@ done:
 	if (remain > 0 && b != buf)
 		memcpy(buf, b, remain);
 
-	nd->nd_remain = remain;
+	nd->nd_remain = remain;			
 	return;
 
 /*
@@ -4246,7 +4253,7 @@ decode_error:
 	dbg_net_trace(INPUT, ("net receive: node %s decode error - %02x %02x %02x %02x\n",
 		   ID, b[0], b[1], b[2], b[3]));
 
-	error = "Protocol decode error";
+	error = "Protocol decode error";			
 
 /*
  *  Handle a general protocol error.
@@ -4692,7 +4699,11 @@ static int test_perm(int mode, int op)
 *
 ******************************************************************************/
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 static void poll_handler(ulong dummy)
+#else
+static void poll_handler(struct timer_list *dummy)
+#endif
 {
 	struct nd_struct *nd;
 	link_t *lk;
@@ -4936,9 +4947,13 @@ static void poll_handler(ulong dummy)
 
 static void poll_start_timer(ulong time)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
 	init_timer(&poll_timer);
 	poll_timer.function = poll_handler;
 	poll_timer.data = 0;
+#else
+	timer_setup(&poll_timer, poll_handler, 0);
+#endif
 	poll_timer.expires = time;
 	add_timer(&poll_timer);
 }
