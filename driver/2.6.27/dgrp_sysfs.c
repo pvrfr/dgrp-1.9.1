@@ -59,17 +59,16 @@ static struct class *dgrp_class;
 struct device *dgrp_class_nodes_dev;
 struct device *dgrp_class_global_settings_dev;
 
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,35)
-static ssize_t dgrp_class_version_show(struct class *class, struct class_attribute *attr, char *buf)
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 static ssize_t dgrp_class_version_show(struct class *class, char *buf)
-#endif
 {
 	return snprintf(buf, PAGE_SIZE, "%s\n", DIGI_VERSION);
 }
-static CLASS_ATTR(driver_version, 0400, dgrp_class_version_show, NULL);
+#endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,15,0)
+static CLASS_ATTR_STRING(driver_version, 0400, dgrp_class_version_show);
+#endif
 
 static ssize_t dgrp_class_register_with_sysfs_show(struct device *c, struct device_attribute *attr, char *buf)
 {
@@ -128,7 +127,7 @@ static DEVICE_ATTR(net_debug, 0600, dgrp_class_net_debug_show, dgrp_class_net_de
 
 static ssize_t dgrp_class_tty_debug_show(struct device *c, struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "0x%lx", GLBL(tty_debug));
+	return snprintf(buf, PAGE_SIZE, "0x%lx\n", GLBL(tty_debug));
 }
 static ssize_t dgrp_class_tty_debug_store(struct device *c, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -140,7 +139,7 @@ static DEVICE_ATTR(tty_debug, 0600, dgrp_class_tty_debug_show, dgrp_class_tty_de
 
 static ssize_t dgrp_class_comm_debug_show(struct device *c, struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "0x%lx", GLBL(comm_debug));
+	return snprintf(buf, PAGE_SIZE, "0x%lx\n", GLBL(comm_debug));
 }
 static ssize_t dgrp_class_comm_debug_store(struct device *c, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -152,7 +151,7 @@ static DEVICE_ATTR(comm_debug, 0600, dgrp_class_comm_debug_show, dgrp_class_comm
 
 static ssize_t dgrp_class_ports_debug_show(struct device *c, struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "0x%lx", GLBL(ports_debug));
+	return snprintf(buf, PAGE_SIZE, "0x%lx\n", GLBL(ports_debug));
 }
 static ssize_t dgrp_class_ports_debug_store(struct device *c, struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -160,7 +159,6 @@ static ssize_t dgrp_class_ports_debug_store(struct device *c, struct device_attr
 	return count;
 }
 static DEVICE_ATTR(ports_debug, 0600, dgrp_class_ports_debug_show, dgrp_class_ports_debug_store);
-
 
 static struct attribute *dgrp_sysfs_global_settings_entries[] = {
 	&dev_attr_pollrate.attr,
@@ -171,7 +169,7 @@ static struct attribute *dgrp_sysfs_global_settings_entries[] = {
 	&dev_attr_comm_debug.attr,
 	&dev_attr_ports_debug.attr,
 	&dev_attr_register_with_sysfs.attr,
-	NULL
+	NULL,
 };
 
 
@@ -180,31 +178,42 @@ static struct attribute_group dgrp_global_settings_attribute_group = {
 	.attrs = dgrp_sysfs_global_settings_entries,
 };
 
-
-
-void dgrp_create_class_sysfs_files(void)
+int
+dgrp_create_class_sysfs_files(void)
 {
-	int ret = 0;
+        int ret = 0;
         int max_majors = 1U << (32 - MINORBITS);
 
-	dgrp_class = class_create(THIS_MODULE, "digi_realport");
-	ret = class_create_file(dgrp_class, &class_attr_driver_version);
 
+	dgrp_class = class_create(THIS_MODULE, "digi_realport");
+
+	if (dgrp_class <= (struct class *)NULL) {
+	  printk(KERN_ALERT "%s:%d: failed to create class.\n", __func__, __LINE__);
+	  return ret;
+	}
+	
 	dgrp_class_global_settings_dev = device_create(dgrp_class, NULL,
-		MKDEV(0, max_majors + 1), NULL, "driver_settings");
+	        MKDEV(0, max_majors + 1), NULL, "driver_settings");
+
+	if (!dgrp_class_global_settings_dev) {
+	  printk(KERN_ALERT "%s:%d: failed to create device.\n", __func__, __LINE__);
+	  return ret;
+	}
 
 	ret = sysfs_create_group(&dgrp_class_global_settings_dev->kobj,
 		&dgrp_global_settings_attribute_group);
+
 	if (ret) {
-		printk(KERN_ALERT "dgrp: failed to create sysfs global settings device attributes.\n");
+	        printk(KERN_ALERT "dgrp: failed to create sysfs global settings device attributes, ret %x\n", ret);
 		sysfs_remove_group(&dgrp_class_global_settings_dev->kobj,
 			&dgrp_global_settings_attribute_group);
-		return;
+		return ret;
 	}
 
 	dgrp_class_nodes_dev = device_create(dgrp_class, NULL,
 		MKDEV(0, max_majors + 2), NULL, "nodes");
 
+	return 0;
 }
 
 
@@ -214,22 +223,16 @@ void dgrp_remove_class_sysfs_files(void)
         int max_majors = 1U << (32 - MINORBITS);
 
 	for (nd = head_nd_struct; nd; nd = nd->nd_inext) {
-		dgrp_remove_node_class_sysfs_files(nd);
+	        dgrp_remove_node_class_sysfs_files(nd);
 	}
 
 	sysfs_remove_group(&dgrp_class_global_settings_dev->kobj,
 		&dgrp_global_settings_attribute_group);
 
-	class_remove_file(dgrp_class, &class_attr_driver_version);
-
-	device_destroy(dgrp_class, MKDEV(0, max_majors + 1));
 	device_destroy(dgrp_class, MKDEV(0, max_majors + 2));
+	device_destroy(dgrp_class, MKDEV(0, max_majors + 1));
 	class_destroy(dgrp_class);
 }
-
-
-
-
 
 static ssize_t dgrp_node_state_show(struct device *c, struct device_attribute *attr, char *buf)
 {
@@ -323,12 +326,12 @@ static struct attribute *dgrp_sysfs_node_entries[] = {
 	&dev_attr_hw_version_info.attr,
 	&dev_attr_hw_id_info.attr,
 	&dev_attr_sw_version_info.attr,
-	NULL
+	NULL,
 };
 
 
 static struct attribute_group dgrp_node_attribute_group = {
-	.name = NULL,
+  	.name = NULL,
 	.attrs = dgrp_sysfs_node_entries,
 };
 
@@ -337,7 +340,7 @@ void dgrp_create_node_class_sysfs_files(struct nd_struct *nd)
 {
 	int ret;
 	char name[10];
-
+  
 	if (nd->nd_ID)
 		ID_TO_CHAR(nd->nd_ID, name);
 	else
@@ -354,17 +357,16 @@ void dgrp_create_node_class_sysfs_files(struct nd_struct *nd)
 	}
 
 	dev_set_drvdata(nd->nd_class_dev, nd);
-
 }
 
 
 void dgrp_remove_node_class_sysfs_files(struct nd_struct *nd)
 {
 	if (nd->nd_class_dev) {
-		sysfs_remove_group(&nd->nd_class_dev->kobj, &dgrp_node_attribute_group);
-		device_destroy(dgrp_class, MKDEV(0, nd->nd_major));
-		nd->nd_class_dev = NULL;
-	}
+ 		sysfs_remove_group(&nd->nd_class_dev->kobj, &dgrp_node_attribute_group);
+ 		device_destroy(dgrp_class, MKDEV(0, nd->nd_major));
+ 		nd->nd_class_dev = NULL;
+ 	}
 }
 
 
@@ -606,6 +608,6 @@ void dgrp_create_tty_sysfs(struct un_struct *un, struct device *c)
 
 void dgrp_remove_tty_sysfs(struct device *c)
 {
-	sysfs_remove_group(&c->kobj, &dgrp_tty_attribute_group);
+      sysfs_remove_group(&c->kobj, &dgrp_tty_attribute_group);
 }
 
