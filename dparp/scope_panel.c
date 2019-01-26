@@ -220,7 +220,6 @@ handle_scope (struct deviceinfo *unit, struct digi_node *node, struct digi_chan 
 	while ((option != 'Q') && (option != 'q') && (option != ESC))
 	{
 		int show_lines;
-		int bytes_on_screen;
 		int screen_pos;
 		int start_line;
 		int end_line;
@@ -309,13 +308,11 @@ handle_scope (struct deviceinfo *unit, struct digi_node *node, struct digi_chan 
 				{
 					screen_pos = FIRST_DATA;
 					show_lines = wr_on ? rd_lines : disp_lines;
-					bytes_on_screen = show_lines * 16;
 				}
 				else
 				{
 					screen_pos = rd_on ? FIRST_DATA + rd_lines + 1 : FIRST_DATA;
 					show_lines = rd_on ? disp_lines - rd_lines - 1 : disp_lines;
-					bytes_on_screen = show_lines * 16;
 				}
 	
 				if (((curbuf->head - curbuf->tail - 1) & curbuf->mask) != 0)
