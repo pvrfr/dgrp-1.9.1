@@ -167,7 +167,7 @@ void set_modem() {
  */
 int get_modem() {
   int mdm;
-  static raw_mdm;
+  static int raw_mdm;
   
   if(ioctl(tty_fd, TIOCMGET, &raw_mdm) < 0)
     bail(1);
