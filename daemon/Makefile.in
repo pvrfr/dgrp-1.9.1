@@ -1,0 +1,108 @@
+#
+# Makefile version = "$Id: Makefile.in,v 1.16 2014/03/27 21:26:52 pberger Exp $"
+#
+datarootdir = @datarootdir@
+
+TOPLEVEL=..
+
+include $(TOPLEVEL)/Makefile.inc
+
+# The current version of OpenSSL that we are shipping with the driver package.
+# This filename.tar.gz should be present in our current directory.
+
+OPENSSLVER=	openssl-1.0.0d
+
+
+#
+# linux commands
+#
+
+SHELL=		/bin/bash
+CC =		@CC@
+OPT=		-Wall -O -DLINUX
+NEEDSSL=	@NEEDSSL@
+MANDIR=@mandir@
+
+#
+# Ditty compiler options
+#
+
+VERSION=  -DDIGI_VERSION=\"$(TRUE_VERSION)\"
+
+APP_OPTS= $(VERSION)  -DOPENSSL_NO_KRB5
+
+ifeq ($(NEEDSSL),yes)
+	INCS=	-I$(TOPLEVEL)/commoninc -I ./$(OPENSSLVER)/include
+else
+	INCS=	-I$(TOPLEVEL)/commoninc -I /usr/local/ssl/include
+endif
+
+#
+# Production targets
+#
+
+all:	drpd
+
+
+# If we can't trust the users version of SSL (if any),
+# then we need to compile our own trusted version.
+# This is painful and takes time, but its worth it.
+
+drpd:	drpd.o
+ifeq ($(NEEDSSL),yes)
+	$(CC) $(APP_OPTS) $(INCS) $(OPT) -o drpd drpd.o -L./$(OPENSSLVER) -lssl -lcrypto -ldl
+else
+	$(CC) $(APP_OPTS) $(INCS) $(OPT) -o drpd drpd.o -L/usr/local/ssl/lib -lssl -lcrypto
+endif
+	strip drpd
+
+drpd.o:	drpd.c
+ifeq ($(NEEDSSL),yes)
+	@echo "Uncompressing, untarring $(OPENSSLVER).tar.gz"
+	(@TAR@ -xvzf $(OPENSSLVER).tar.gz 1>/dev/null)
+	@echo "Now configuring, making $(OPENSSLVER)... Please wait..."
+	(cd $(OPENSSLVER); ./config 2>/dev/null; make 2>/dev/null)
+	$(CC) -c $(APP_OPTS) $(INCS) $(OPT) -o drpd.o drpd.c
+else
+	$(CC) -c $(APP_OPTS) $(INCS) $(OPT) -o drpd.o drpd.c
+endif
+
+
+auth:	auth.o
+ifeq ($(NEEDSSL),yes)
+	$(CC) $(APP_OPTS) $(INCS) $(OPT) -o auth auth.o -L./$(OPENSSLVER) -lssl -lcrypto -ldl
+else
+	$(CC) $(APP_OPTS) $(INCS) $(OPT) -o auth auth.o -L/usr/local/ssl/lib -lssl -lcrypto
+endif
+	strip auth
+
+auth.o:	auth.c
+ifeq ($(NEEDSSL),yes)
+	$(CC) -c $(APP_OPTS) $(INCS) $(OPT) -o auth.o auth.c
+else
+	$(CC) -c $(APP_OPTS) $(INCS) $(OPT) -o auth.o auth.c
+endif
+
+
+#
+# Utility
+#
+
+install:
+	install -d $(DRPDDIR)
+	install -d $(RPM_BUILD_ROOT)$(MANDIR)/man8
+	install -m 755 drpd $(DRPDDIR)
+	install -m 644 drpd.man $(RPM_BUILD_ROOT)$(MANDIR)/man8/drpd.8
+
+uninstall:
+	-rm -f $(DRPDDIR)/drpd
+	-rm -r $(DRPDDIR)
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man8/drpd.8*
+
+clean: 
+	rm -f *.o drpd
+	rm -fr $(OPENSSLVER)
+
+clobber:	clean
+
+.PHONY: all clean clobber install uninstall

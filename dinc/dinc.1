@@ -1,0 +1,261 @@
+.\" @(#) $Id: dinc.1,v 1.10 2000/09/01 11:37:26 randall Exp $ Copyright (C) 1995-2000 Digi International, All Rights Reserved;
+.TH DINC 1 "06 Apr 2000"
+.ds ]W 
+.SH NAME
+.LP
+dinc - ultra simple serial connection tool a la tip(1).
+.SH SYNOPSIS
+.B dinc [[-125678ENOhsi]] [[baudrate]] [devname]
+.SH DESCRIPTION
+.LP
+.B dinc
+does basically what
+.BR tip (1)
+or
+.BR cu (1C)
+do but with way less confusion.  It provides immediate support
+for changing line settings, setting and
+monitoring modem signals while you are connected, and it also
+supports extended baud rates up to 115200 on certain hardware.
+.LP
+There are no files to configure.  In its simplest form, just invoke
+.B dinc
+with the name of the port you wish to open.  It opens the port
+in non-blocking mode so carrier need not be present.
+.LP
+.B dinc
+does use the locking protocols adhered to by
+.BR ttymon (1M),
+.BR cu (1C),
+.BR uucp (1C),
+and
+.BR tip (1)
+so it will be careful not to access ports which might be in use by
+any of those processes.
+While
+.B dinc
+is intended primarily to be a troubleshooting or admin tool, it might 
+find application as a general user tool as well.
+.LP
+.B dinc
+is provided along with source code so you can modify it to suit
+your needs.
+.SH USAGE
+.LP
+To invoke
+.B dinc 
+with its default initial line settings, simply type
+.B dinc
+followed by the device name you wish to open.
+.LP
+.B dinc
+opens the specified serial device, establishes default line
+settings, prints some information about the line, and says
+its name (it beeps :)
+.sp
+---- DINC --- port=/dev/ttyC41 ----
+.br
+  9600 BAUD 8 NONE 1 SWFC=ON  HWFC=OFF
+.br
+CAR=OFF DTR=ON  RTS=ON  CTS=OFF DSR=OFF
+.br
+Type ~? for help.
+.LP
+This shows the
+line settings as 9600 baud, 8 bits, no parity, 1 stop bit.
+Software flow control is enabled, hardware flow control
+is disabled, and DTR and RTS are
+both driven active.  The initial incoming modem signal states for carrier,
+CTS, and DSR are also reported.
+.LP
+If the port cannot be opened,
+.B dinc
+prints an error message and aborts.
+.LP
+Once
+.B dinc
+successfully opens the port, communication may begin immediately.
+It is also ready to accept various tilde commands to configure its
+operation.  These are discussed in a later section.
+.SH OPTIONS
+.LP
+If no command line arguments (other than the device name) are specified,
+.B dinc
+defaults to 9600 baud, 8 bit characters, no parity, and 1 stop bit,
+with software flow control enabled and hardware flow control disabled
+unless the 
+.B -i 
+command line flag is specified - in which case it will default to the
+same paramaters as the internal ports.
+.LP
+If a baud rate is specified on the command line, it may either preceed
+or follow the device name.  Supported baud rates are 75, 150, 300,
+600, 1200, 2400, 4800, 9600, 19200, and 38400.  On Digi International
+(formerly Central Data) EtherLite(R) and SCSI Terminal Server(TM)
+hardware, the additional baud rates of 57600, 76800, 115200, 153600
+and 230400 may be supported.  Extremely seldomly used baud rates such
+as 50, 110, 134, 200, and 1800 are omitted.
+.LP
+Note:
+.B dinc
+expects the specified device name to start with a non-numeric character so
+as to distinguish it from a baud rate.
+.LP
+The other command line options are as follows:
+.TP
+.B "-1"
+1 stop bit
+.TP
+.B "-2"
+2 stop bits
+.TP
+.B "-5"
+5-bit characters
+.TP
+.B "-6"
+6-bit characters
+.TP
+.B "-7"
+7-bit characters
+.TP
+.B "-8"
+8-bit characters
+.TP
+.B "-E"
+Even parity
+.TP
+.B "-N"
+No parity
+.TP
+.B "-O"
+Odd parity
+.TP
+.B "-h"
+Enable RTS/CTS hardware flow control
+.TP
+.B "-s"
+Disable software flow control
+.TP
+.B "-i"
+Do not initialize the port on open or restore it on close
+.SH "TILDE COMMANDS"
+.LP
+At any time while running
+.BR dinc ,
+you may issue various "tilde commands" to affect its operation
+similar to the tilde commands used by
+.BR tip (1)
+and
+.BR cu (1C).
+A tilde command must be immediately preceded by either a newline
+or a carriage return or another tilde command.
+Each tilde command consists of the "~" character followed by
+a single command character.  The command character may be either
+upper or lower case.  A tilde character at the start of a line may
+be sent by typing tilde twice in succession.
+.LP
+The following tilde commands are supported:
+.TP
+.B "~?"
+Print the list of tilde commands.
+.TP
+.B "~."
+Quit out of
+.BR dinc .
+Like the quit sequence for
+.BR tip (1)
+and
+.BR cu (1C),
+although the "~q" or "~x" commands are recommended instead to avoid
+possible interaction with
+.BR rlogin (1)
+which also uses the same quit sequence.
+.TP
+.B "~b ~+ ~- ~= ~_"
+Cycle through the baud rate table.  ~b, ~+, and ~= all increment the
+baud rate to the next available value.  If the baud rate is currently
+at the highest supported value, it wraps around to the lowest. ~- and ~_
+both decrement the baud rate, wrapping around at the bottom of the 
+baud list.
+.TP
+.B "~c"
+Toggles between 7 and 8 bit characters.
+.TP
+.B "~d"
+Toggles the DTR modem signal.
+.TP
+.B "~f"
+Toggles between character framing with 1 stop bit and 2 stop bits.
+.TP
+.B "~h"
+Toggles hardware flow control.
+.TP
+.B "~i"
+Displays information about the current connect in the same manner as
+the sign on message.
+.TP
+.B "~k"
+Issues a break indication to the serial line.
+.TP
+.B "~m"
+Displays the current state of the modem signals.
+.TP
+.B "~o"
+Issues an output flush to the line.  Useful if output
+is blocked for some reason.
+.TP
+.B "~p"
+Cycles through the parity options of none, odd, and even.
+.TP
+.B "~q"
+Quits out of
+.BR dinc .
+Preferred over ~. since it won't interact with
+.BR rlogin (1).
+.TP
+.B "~r"
+Toggles the RTS modem signal.
+.TP
+.B "~s"
+Toggles software flow control mode.
+.TP
+.B "~x"
+Exits out of
+.BR dinc .
+Same as ~q and ~.
+.SH "ABOUT THE SOURCE CODE"
+.LP
+Source code is supplied consisting of three files:
+.nf
+       dinc.c - main program
+       dinc.h - header definitions
+       dinc_hw.c - hardware dependencies
+.fi
+.LP
+It also requires the presence of the 'cd_ext.h' header
+file, but only for the portions that support
+extended baudrates.
+.LP
+.B dinc
+has been built using both the Gnu C compiler (gcc) and the SunPro
+ANSI C compiler.  To build, refer to the supplied Makefile and edit
+the appropriate defines.
+.LP
+.SH "SEE ALSO"
+.BR ct (7),
+.BR cu (1C),
+.BR rlogin (1),
+.BR stty (1),
+.BR termio (7),
+.BR termios (7),
+.BR tip (1),
+.BR ttymon (1M),
+.BR uucp (1C)
+.SH "PROVIDED BY"
+.LP
+.B dinc
+was written by Dennis Cronin, formerly of Central Data Corporation
+(now part of Digi International).  It is currently maintained by Jeff
+Randall of Digi International.  Other vendors are invited to add high
+baud rate support for their products and forward changes to Jeff
+(Jeff_Randall@digi.com) for inclusion.

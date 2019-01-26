@@ -1,0 +1,290 @@
+. Copyright (c) 1998 Digi International, All Rights Reserved.
+.
+. $Id: ditty.man,v 1.6 2015/11/18 03:53:56 pberger Exp $
+.
+.TH DITTY 1 "June 20, 2001"
+.SH NAME
+ditty \- utility program that sets and displays the terminal options 
+for Digi intelligent serial products.
+.SH SYNOPSIS
+.B ditty
+[\-a][\-p][\-n ttyname][option(s)][ttyname]
+.SH DESCRIPTION
+.I Ditty
+with no options, displays all Digi special driver settings, modem
+signals, and all standard parameters displayed by stty(1) for the tty device
+referenced by standard input.
+.PP
+Command options are provided to change flow control settings, force modem
+control lines, and display all tty settings.  Any unrecognized options are
+passed to stty(1) for interpretation.
+.PP
+The options are:
+.TP 13 
+.B -a
+Display all of the unique Digi option settings, as 
+well as all of the standard tty settings reported by stty -a.
+.TP 13 
+.B -p
+Interpret the port as a parallel printer port.  This  
+flag should only be used for the ninth port of a PORTS
+8emp module.
+.TP 13
+.B -n
+ttyname Set and display options for the given tty device, instead of
+standard input.  This option may be used on a modem control line when
+no carrier is present.
+.PP
+The following options specify transient actions to be performed 
+immediately.
+.TP 13 
+.B break
+Send a 250 MS break signal out on the tty line.
+.TP 13 
+.B flush
+Immediately flush (discard) tty input and output.
+.TP 13 
+.B flushin
+Flush tty input only.
+.TP 13 
+.B flushout
+Flush tty output only.
+.PP
+The following options specify actions which are not "sticky,"
+meaning that the changes are reset when the device is closed,
+and that the device will use the default values the next time
+it is opened. 
+.TP 13 
+.B stopout
+Stop output exactly as if an XOFF character was received.
+.TP 13
+.B startout
+Restart stopped output exactly as if an XON character was
+received.
+.TP 13
+.B stopin
+Activate flow control to stop input.
+.TP 13
+.B startin
+Release flow control to resume stopped input.
+.TP 13
+.B [-]dtr
+Raise [drop] the DTR modem control line, unless DTR hardware
+flow control is selected.
+.TP 13 
+.B [-]rts
+Raise [drop] the RTS modem control line, unless RTS hardware 
+flow control is selected.
+.PP
+The following options are "sticky" -- the affects continue until the system
+is rebooted or until the options are changed.
+.TP 13
+.B [-]fastbaud
+Alters the baud rate tables according to the following table.
+Unless another setting overrides the selection (such as the
+Linux CBAUDEX flag, or the Digi "cspeed" setting), an application
+which selects the baud rate on the left will actually (and
+transparently) use the baud rate on the right.  Note that not
+all rates are supported by all hardware.  Check your hardware
+documentation for speed limitations.
+.RS
+.TP 12
+.B \ \ \ Speed
+.B Fastbaud Speed
+.TP 12
+\ \ \ 50
+57600
+.TP 12
+\ \ \ 75
+76800
+.TP 12
+\ \ \ 110
+115200
+.TP 12
+\ \ \ 134
+131657
+.TP 12
+\ \ \ 150
+153600
+.TP 12
+\ \ \ 200
+230400
+.TP 12
+\ \ \ 300
+460800
+.TP 12
+\ \ \ 600
+921600
+.RE
+.TP 13
+.B cspeed n
+This parameter allows one to override all other terminal speed
+parameters with the supplied integer rate.  The current custom
+rate will be displayed in parentheses with an asterisk after it
+whenever "cspeed" is in effect.  The "cspeed" feature will be
+disabled if a rate of "0" is supplied (the rate would then revert
+to whatever the prevailing rate was).  Note that not
+all rates are supported by all hardware.  Check your hardware
+documentation for speed limitations.  Note that the displayed
+"cspeed" value may not match the requested rate, since only a
+finite set of rates are actually possible given hardware and
+software limitations.
+.TP 13
+.B -cspeed
+An alternate means to disable the "cspeed" feature.
+.TP 13
+.B [-]rtspace
+Enable [disable] RTS hardware input flow control, so RTS drops
+to pause remote transmission.
+.PP
+.TP 13
+.B [-]ctspace
+Enable [disable] CTS hardware output flow control, so local
+transmission pauses when CTS drops.
+.PP
+.TP 13
+.B [-]dsrpace
+Enable [disable] DSR hardware output flow control, so local
+transmission pauses when DSR drops.
+.PP
+.TP 13
+.B [-]dcdpace 
+Enable [disable] DCD hardware output flow control, so local
+transmission pauses when DCD drops.
+.PP
+.TP 13
+.B [-]dtrpace
+Enable [disable] DTR hardware input flow control, so DTR
+drops to pause remote transmission.
+.PP
+.TP 13
+.B [-]rtstoggle
+Enable [disable] RTS toggle mode.  This feature when enabled, will cause
+RTS to be active when data is transmitted and inactive otherwise.
+.PP
+.TP 13
+.B [-]forcedcd
+Disable [re-enable] carrier sense, so the tty may be opened
+and used even when carrier is not present.
+.PP
+.TP 13
+.B [-]altpin
+Switches the function of the DSR and the DCD inputs on the
+interface connector, so that DCD is available when using an
+8-pin RJ-45 connector instead of a 10-pin RJ-45 connector.
+.PP
+.TP 13
+.B startc c
+Sets the XON flow control character.  The character may be
+given as a decimal, octal, or hexadecimal number.  Octal
+numbers are recognized by the presence of a leading zero,
+and hexadecimal numbers are denoted by a leading "0x".
+For example, the standard XON character <CTRL-Q>, can be
+entered as "17" (decimal), "021" (octal), or "0x11" 
+hexadecimal.     
+.PP
+.TP 13
+.B stopc c
+Sets the XOFF flow control character.  The character may be
+given as a decimal, octal, or hexadecimal number (See startc,
+above, for format of octal and hexadecimal numbers).
+.PP
+.TP 13
+.B astartc c
+Sets the auxiliary XON flow control character.  The character
+may be given as a decimal, octal, or hexadecimal number (See 
+startc, above, for format of octal and hexadecimal numbers).
+.PP
+.TP 13
+.B astopc c
+Sets the auxiliary XOFF flow control character.  The character
+may be given as a decimal, octal, or hexadecimal number (See 
+startc, above, for format of octal and hexadecimal numbers).
+.PP
+.TP 13
+.B [-]aixon
+Enables auxiliary flow control, so that two unique characters
+are used for XON and XOFF.  If both XOFF characters are
+received, transmission will not resume until both XON characters
+are received.
+.PP
+.TP 13
+.B maxcps
+Sets the maximum Character Per Second (CPS) rate at which
+characters are output to the transparent print device.
+The rate chosen should be just below the average print speed.   
+If the number is too low, printer speed will be reduced.
+If the number is too high, the printer will activate flow
+control, temporarily stopping all output to both the CRT and the printer;
+keyboard response is severely impaired.
+Default is 100 CPS.
+.PP
+.TP 13
+.B maxchar
+Sets the maximum number of transparent print characters
+the driver will place in the output queue ahead of CRT data.  
+Reducing this number increases system overhead; increasing
+this number delays operator keystroke echo times when the
+transparent printer is in use.
+Default is 50 characters.
+.PP
+.TP 13
+.B bufsize
+Sets the driver's estimate of the size of the transparent
+printer's input buffer.
+After a period of inactivity, the driver bursts this many
+characters to the transparent printer before reducing to the
+maxcps rate selected above.
+Default is 100 characters.
+
+Note:
+If the printer activates flow control at the start
+of a printout,
+.B bufsize
+is too large.
+Otherwise if it activates flow control during a printout,
+.B maxcps
+is too large.
+If the printer is not activating flow control,
+but terminal delays are experienced,
+.B maxchar
+is too large.
+.PP
+.TP 13
+.B onstr \ s
+Sets the transparent print ON escape sequence.
+This string tells the terminal that the data which follows
+should be sent to the attached printer.
+An octal character xxx may be given as
+.BR \exxx .
+.PP
+.TP 13
+.B offstr \ s
+Sets the transparent print off escape sequence.
+This sequence tells the terminal that subsequent data
+should be displayed on the screen.
+An arbitrary octal character xxx may be given as
+.BR \exxx .
+.PP
+.TP 13
+.B term \ t
+Sets transparent print on/off strings to values found in the
+internal default table.  Internal default are provided for the
+following terminals: adm31, ansi, dg200, dg210, hz1500, mc5, microterm,
+pcterm, tvi, vp-a2, vp-60, vt52, vt100, wyse30, wyse50, wyse60, or wyse75.
+If the terminal type is not found in the internal default
+table, then
+.B ditty
+reads the
+.IR terminfo ,
+entry for the terminal type sets transparent print on/off strings
+to values given by the
+.B mc5/mc4
+attributes found there.
+.PP
+.SH "SEE ALSO"
+stty(1), ioctl(2), termio(4), and terminfo(5).
+.SH BUGS
+None that we are aware of.
+
+

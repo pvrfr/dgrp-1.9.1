@@ -1,0 +1,135 @@
+	INSTALLATION NOTES FOR THE RPM SRC PACKAGE
+
+WARNING:  do not attempt to install this package if there is already a 
+RealPort (dgrp) driver loaded, or daemons running.
+
+for the truly impatient
+-----------------------
+Execute the following commands:
+	1> rpm -ivv dgrp-1.9-36.src.rpm	(prepare for installation)
+	2> cd /usr/src/redhat/SPECS
+	3> rpm -bi dgrp-1.9.spec 			(perform make and install)
+
+for the slightly less impatient
+-------------------------------
+The above commands make and install a working RealPort (dgrp) driver.
+However, rpm does not recognize this as an installed package yet.  In order to use the 
+full capabilities of the rpm utilities, one needs to go a step further 
+and create an rpm binaries package for their specific architecture, and then
+install this package on their machine.
+To do this, use instead the following set of commands:
+
+	1> rpm -ivv dgrp-1.9-36.src.rpm	(prepare for installation)
+	2> cd /usr/src/redhat/SPECS
+	3> rpm -bb --target=<arch> dgrp-1.9.spec 		
+			(perform make and install AND make binary rpm)
+	4> cd /usr/src/redhat/RPMS/<arch>
+	5> rpm -ivv dgrp-1.9-36.<arch>.rpm		(install the package)
+
+<arch> is the architecture of the installation machine (ie i386, i686,
+alpha, etc).
+
+NOTE: Older versions of rpm use --buildarch <arch> instead of --target=<arch>.
+
+for the rest of us
+------------------
+Ignore the above and read on...
+Most of the rpm commands allow for -v or -vv to turn on verbose and
+double verbose output.
+
+about the package
+-----------------
+The file dgrp-1.9-36.src.rpm is the Linux RealPort (dgrp) source code rpm
+package, to be built on any architecture.  You must have the rpm 
+(Red Hat Package Manager) facility installed on your machine. 
+
+first things first
+------------------
+	1> rpm -ivv dgrp-1.9-36.src.rpm
+The fist command installs the source code in the SOURCES directory used by 
+RPM (/usr/src/redhat/SOURCES).  The actual source code is distributed as a 
+zipped tar file.  This command also copies the spec file to the SPEC directory.
+/usr/src/redhat/SPECS/dgrp-1.9.spec is just a text file with some 
+script like commands, package information and file list.  
+
+installing using the defaults
+-----------------------------
+You are now ready to build the RealPort (dgrp) driver package.  If you want to
+just use the default settings, the build is simple and can be performed
+by issuing the commands:
+
+	2> cd /usr/src/redhat/SPECS
+	3> rpm -bb --target=<arch> dgrp-1.9.spec 		
+			(perform make and install AND make binary rpm)
+
+This will attempt to create an rpm binaries package.
+If the build completes without error, you will see the message 
+"Wrote:  /usr/src/redhat/RPMS/<arch>/dgrp-1.9-36.<arch>.rpm"
+
+	4> cd /usr/src/redhat/RPMS/<arch>
+	5> rpm -ivv dgrp-1.9-36.<arch>.rpm		(install the package)
+
+To check if all the files were installed correctly, use
+
+	6> rpm -bl [-vv] dgrp-1.9.spec
+
+You now have your very own copy of the RealPort (dgrp) Linux package
+compiled for your specific architecture and kernel version!  It can
+be found in /usr/src/redhat/RPMS/<arch>/dgrp-1.9-36.<arch>.rpm 
+Next time you do an installation on a machine with the same 
+configuration you need just do 
+	
+	> rpm -ivv dgrp-1.9-36.<arch>.rpm
+
+
+custom installation
+-------------------
+If you need to customize the Makefiles to reflect your own configuration, 
+or modify the source code, this will need to be done prior the build.
+To access the Makefile, you have to first unpack the tgz file:
+
+	2> cd /usr/src/redhat/SPECS
+	3> rpm -bp dgrp-1.9.spec
+
+The "-bp" in the options specifies that only the prep section of the spec file
+should be executed.  This will, among other things, create the 
+/usr/src/redhat/BUILD/dgrp-1.9 directory and unpack the tarfile
+there.  
+
+	4> cd ../BUILD/dgrp-1.9
+
+You may then make any necessary changes to the Makefile and source code.
+
+WARNING:  you might want to now save the final version of your changes 
+somewhere other than in the /usr/src/redhat tree for backup.
+
+WARNING:  if you change the final location that any of the files in the 
+package, you will also want to update the %file list in the spec file
+/usr/src/redhat/SPECS/dgrp-1.9.spec  Otherwise, RPM will complain 
+that the installation was incomplete, because some files were not found.
+You can also document your changes in the %description section, if you
+so desire.
+
+There are several ways to install the driver package at this point, but the
+following is the easiest, and safest way:
+
+	5> cd /usr/src/redhat/BUILD 
+	6> tar -cvzf ../SOURCES/dgrp-1.9.tgz dgrp-1.9/*
+	(this will replace the original source code provided by the package)
+
+You can now execute commands 2 through 6 from the section "installing using
+the defaults" to install your customized rpm.
+
+verifying the package
+---------------------
+You can check if the RealPort (dgrp) package is installed using the verfify (-V)
+command line option:
+	> rpm -V -vv dgrp
+
+removing RealPort (dgrp) Linux
+-----------------------
+If you have built the rpm binaries package as indicated, then you can
+use rpm to remove it.  Simply use the erase (-e) command line option:
+	> rpm -e -vv dgrp
+
+

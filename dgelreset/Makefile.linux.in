@@ -1,0 +1,60 @@
+#
+# Makefile version = "$Id: Makefile.linux.in,v 1.4 2014/03/27 21:26:52 pberger Exp $"
+#
+datarootdir = @datarootdir@
+
+include ../Makefile.inc
+
+#
+# linux commands
+#
+
+# SHELL=		/bin/bash
+CC=		gcc
+OPT=		-O
+
+MANDIR=@mandir@
+
+#
+# DGELReset compiler options
+#
+
+DEBUG=
+# DEBUG=-DDEBUG
+
+APP_OPTS= -DLinux ${DEBUG}
+
+#
+# Production targets
+#
+
+all:	dgelreset
+
+dgelreset:	dgelreset.c 
+	$(CC) ${APP_OPTS} -o dgelreset $(OPT) -I. dgelreset.c
+	: strip dgelreset
+
+#
+# Utility
+#
+
+install:
+	install -d -m 755 $(ELRESETBIN)
+	install -d -m 755 $(RPM_BUILD_ROOT)$(MANDIR)/man1/
+	install -m 700 dgelreset $(ELRESETBIN)/$(ELRESETNAME)
+	install -m 644 dgelreset.1 $(RPM_BUILD_ROOT)$(MANDIR)/man1/$(ELRESETNAME).1
+
+# TODO: check and make sure no other packages are 
+# using the ditty program
+uninstall:
+	-rm -f $(ELRESETBIN)/$(ELRESETNAME)
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man1/$(ELRESETNAME).1*
+
+clean: 
+	rm -f *.o dgelreset
+
+clobber:	clean
+	rm -f Makefile.linux
+
+.PHONY: all kernel clean clobber install uninstall
+

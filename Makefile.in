@@ -1,0 +1,167 @@
+#
+# Copyright 1999 by Digi International (www.digi.com)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#       Main Makefile for PCI DataFire RAS/AccelePort RAS/AccelePort 2000 driver
+#       for Linux
+#
+#       $Id: Makefile.in,v 1.15 2008/12/22 20:53:52 scottk Exp $
+#
+
+# Pick up part numbers, release numbers, etc...
+include Makefile.inc
+
+VERSION=  -DDIGI_VERSION=\"$(TRUE_VERSION)\"
+APP_OPTS= $(VERSION)
+
+
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+
+# Compiler and flags to use when compiling regular apps
+CC = @CC@
+CFLAGS = @CFLAGS@
+
+
+# Where to put the module when we are finished...
+MODDIR = @MODDIR@
+
+
+
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+CPP=@CPP@
+CPP_DEPEND=$(CC) -MM
+
+FULLPACKAGE = @FULLPACKAGE@
+
+all: build
+
+build:
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	(cd driver/build; make all)
+endif
+	(cd ditty; make all)
+	(cd daemon; make all)
+	(cd config; make all)
+	(cd dgipserv; make -f Makefile.linux all)
+	(cd dgelreset; make -f Makefile.linux all)
+	(cd dinc; make LINUX)
+	(cd dparp; make linux)
+
+clean:
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	(cd driver/build; make clean)
+endif
+	(cd ditty; make clean)
+	(cd daemon; make clean)
+	(cd config; make clean)
+	(cd dgipserv; make -f Makefile.linux clean)
+	(cd dgelreset; make -f Makefile.linux clean)
+	(cd dinc; make clean)
+	(cd dparp; make clobber)
+
+distclean:  clean
+	rm -f config.cache config.log config.status
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	rm -f driver/build/Makefile driver/build/Makefile.in
+	rm -f driver/build
+endif
+	rm -f ditty/Makefile
+	rm -f daemon/Makefile config/Makefile
+	rm -f init/Makefile
+	rm -f commoninc/config.h
+	rm -f Makefile
+	rm -rf autom4te.cache
+
+install:
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	(cd driver/build; make install)  
+endif
+	(cd ditty;  make install)
+	(cd daemon; make install)
+	(cd config; make install)
+	(cd init;   make install)
+	(cd dgipserv; make -f Makefile.linux install)
+	(cd dgelreset; make -f Makefile.linux install) 
+
+# Copy dinc and dparp into correct position
+	install -d $(RPM_BUILD_ROOT)/usr/bin
+	install -m 0755 dinc/dinc $(RPM_BUILD_ROOT)/usr/bin/dinc.dgrp
+	install -m 0755 dparp/dparp $(RPM_BUILD_ROOT)/usr/bin/dpa.dgrp
+
+# Copy postinstall and preuninstall scripts into correct location for RPM.
+	install -d $(DGRPCONFIG)
+	install -m 0711 scripts/postinstall $(DGRPCONFIG)/postinstall
+	install -m 0711 scripts/preuninstall $(DGRPCONFIG)/preuninstall
+
+# Make directory structure for /usr/share for the RPM install
+	install -d $(RPM_BUILD_ROOT)/usr/share
+	install -d $(RPM_BUILD_ROOT)/usr/share/doc
+
+
+# This target is used only by the tar.gz, RPM does NOT use it.
+postinstall:
+	if [ -d $(DGRPCONFIG) -a -f $(DGRPCONFIG)/postinstall ] ; then \
+		$(DGRPCONFIG)/postinstall; \
+	fi
+
+
+# This target is used only by the tar.gz, RPM does NOT use it.
+preuninstall:
+	if [ -d $(DGRPCONFIG) -a -f $(DGRPCONFIG)/preuninstall ] ; then \
+		$(DGRPCONFIG)/preuninstall; \
+	fi
+
+
+# This target is used only by the tar.gz, RPM does NOT use it.   
+postuninstall:
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	if [ -e /sbin/depmod ] ; then \
+		/sbin/depmod -a; \
+	fi
+endif
+
+uninstall:
+ifeq ($(FULLPACKAGE), FULLPACKAGE)
+	(cd driver/build; make uninstall)
+endif
+	(cd ditty;  make uninstall)
+	(cd daemon; make uninstall)
+	(cd config; make uninstall)
+	(cd init;   make uninstall)
+	(cd dgipserv; make -f Makefile.linux uninstall)
+	(cd dgelreset; make -f Makefile.linux uninstall)
+	-rm -r $(DGRPBIN)
+	-rm -r $(RPM_BUILD_ROOT)/usr/bin/dinc.dgrp
+	-rm -r $(RPM_BUILD_ROOT)/usr/bin/dpa.dgrp
+
+
+# Target to get all sources pushed into 1 directory for
+# pushing off to the kernel sources list.
+for_kernel:
+	rm -rf kernel
+	mkdir -p kernel
+	cp driver/build/*.c kernel
+	cp driver/build/include/*.h kernel
+	cp commoninc/digirp.h kernel
+	cp Makefile.kernel kernel/Makefile
+	cat kernel/Makefile | sed "s/TRUE_VERSION/$(TRUE_VERSION)/g" > kernel/Makefile.out
+	mv kernel/Makefile.out kernel/Makefile

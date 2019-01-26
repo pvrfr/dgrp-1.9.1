@@ -1,0 +1,113 @@
+# 
+# Copyright 1999 by Digi International (www.digi.com)
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+#
+#	Main Makefile for PCI DataFire RAS/AccelePort RAS/AccelePort 2000 driver
+#	for Linux
+#
+#	$Id: Makefile26,v 1.3 2014/03/27 21:26:52 pberger Exp $
+#
+
+
+# To make correct module for 2.5 and up:
+# make -C path/to/kernel/src SUBDIRS=$PWD modules
+datarootdir = @datarootdir@
+
+ifndef MYPWD   
+MYPWD = $(shell pwd)
+endif
+
+# configure.in substitutions here...
+MODDIR = $(shell echo $(RPM_BUILD_ROOT)@MODDIR@/misc)
+LSMOD = @LSMOD@
+RMMOD = @RMMOD@
+INSMOD = @INSMOD@
+NEW_TTY_LOCKING = @NEW_TTY_LOCKING@
+NEW_TTY_BUFFERING = @NEW_TTY_BUFFERING@
+REGISTER_TTYS_WITH_SYSFS = @REGISTER_TTYS_WITH_SYSFS@
+
+# Grab version and other important stuff
+include ${MYPWD}/../../Makefile.inc
+
+MANDIR=@mandir@
+
+ifndef MYMANDIR
+MYMANDIR = ${MANDIR}
+endif
+
+MODULE= dgrp.ko
+
+
+# Send in some extra things...
+EXTRA_CFLAGS += -I${MYPWD} -I${MYPWD}/include -I${MYPWD}/../../commoninc \
+	-DDIGI_VERSION=\"$(TRUE_VERSION)\" -DDGRP_TRACER
+
+ifeq ($(NEW_TTY_LOCKING),Yes)
+	EXTRA_CFLAGS += -DNEW_TTY_LOCKING
+endif
+
+ifeq ($(NEW_TTY_BUFFERING),Yes)
+	EXTRA_CFLAGS += -DNEW_TTY_BUFFERING
+endif
+
+ifeq ($(REGISTER_TTYS_WITH_SYSFS),Yes)
+	EXTRA_CFLAGS += -DREGISTER_TTYS_WITH_SYSFS
+endif
+
+# Conform to correct kbuild conventions...
+obj-m += dgrp.o
+dgrp-objs := 	dgrp_common.o dgrp_dpa_ops.o dgrp_driver.o \
+		dgrp_mon_ops.o  dgrp_net_ops.o dgrp_ports_ops.o \
+		dgrp_proc.o dgrp_specproc.o dgrp_tty.o dgrp_sysfs.o
+
+
+all: build
+
+
+build:
+	make -C @KERNEL_HEADERS@ SUBDIRS=$$PWD modules MYPWD=${MYPWD} MYMANDIR=${MYMANDIR}
+
+
+install:
+	install -m 0755 -d $(MODDIR)
+	install -m 0644 $(MODULE) $(MODDIR)
+	install -d  $(RPM_BUILD_ROOT)$(MYMANDIR)/man8
+	install -m 644 dgrp.man $(RPM_BUILD_ROOT)$(MYMANDIR)/man8/dgrp.8
+
+
+uninstall:
+	-rm -f $(MODDIR)/$(MODULE)
+	-rm -f $(RPM_BUILD_ROOT)$(MYMANDIR)/man8/dgrp.8*
+
+
+clobber: clean
+	rm -rf Makefile
+
+
+clean:
+	rm -f *.o
+	rm -f *.ko
+	rm -f dgrp.mod.c
+	rm -f .*.cmd
+	rm -rf .tmp_versions
+	-rm -f *.i *.s
+	rm -rf *.symvers
+	rm -rf modules.order
+	rm -rf Module.markers
+
+
+.PHONY: build all install uninstall postinstall preuninstall
+

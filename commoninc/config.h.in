@@ -1,0 +1,19 @@
+
+
+/*
+ * Kernel Specific stuff
+ */
+
+#undef KERNEL_RUNNING_VERSION
+#undef KERNEL_HEADERS
+#undef MODDIR
+
+/*
+ * Which term lib did we find in configure?
+ */
+
+#undef USING_NCURSES
+#undef USING_CURSES
+#undef USING_TERMCAP
+#undef USING_TERMLIB
+

@@ -1,0 +1,999 @@
+
+dnl Process this file with autoconf to produce a configure script.
+dnl
+dnl $Id: configure.in,v 1.1 2002/06/23 04:38:12 scottk Exp
+dnl
+dnl
+AC_REVISION($Revision: 1.45 $)dnl
+AC_INIT(DGRP Driver, 1.0.0, support@digi.com)
+AC_CONFIG_HEADER(commoninc/config.h)
+
+
+dnl
+dnl Define some useful macros
+dnl
+AC_DEFUN(AC_PROGRAM_SOURCE,
+[AC_REQUIRE([AC_PROG_CPP])AC_PROVIDE([$0])cat > conftest.c <<EOF
+#include "confdefs.h"
+[$1]
+_CUT_HERE_
+[$2]
+EOF
+eval "$ac_cpp conftest.c 2>&5 | sed -e '1,/_CUT_HERE_/d' > conftest.out"   
+. ./conftest.out
+dnl rm -f conftest*
+])dnl
+dnl
+
+define(AC_NOTE,
+[echo "$1" 1>&AC_FD_MSG
+])dnl
+
+
+dnl Echo out the version of the driver.
+AC_MSG_CHECKING(for Digi Driver package version)
+DIGI_DRIVER_VERSION=`grep 'TRUE_VERSION=' ./Makefile.inc | cut -d"\"" -f2`
+DIGI_DRIVER_DATE=`grep 'PKG_DATE=' ./Makefile.inc | cut -d"=" -f2`
+AC_MSG_RESULT([${DIGI_DRIVER_VERSION} built on ${DIGI_DRIVER_DATE}])
+
+dnl First, start checking for some required bins that we need.
+
+AC_PATH_PROG([AWK], [awk], [/bin/awk], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([AWK])
+
+AC_PATH_PROG([ARCH], [arch], [/bin/arch], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([ARCH])
+   
+AC_PATH_PROG([CAT], [cat], [/bin/cat], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CAT])
+
+AC_PATH_PROG([CD], [cd], [/bin/cd], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CD])
+
+AC_PATH_PROG([CHKCONFIG], [chkconfig], [/sbin/chkconfig], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CHKCONFIG])
+
+AC_PATH_PROG([CHMOD], [chmod], [/bin/chmod], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CHMOD])
+
+AC_PATH_PROG([CHOWN], [chown], [/bin/chown], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CHOWN])
+
+AC_PATH_PROG([CP], [cp], [/bin/cp], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([CP])
+
+AC_PATH_PROG([DEPMOD], [depmod], [/sbin/depmod], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([DEPMOD])
+
+AC_PATH_PROG([ECHO], [echo], [/bin/echo], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([ECHO])
+
+AC_PATH_PROG([FUSER], [fuser], [/sbin/fuser], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([FUSER])
+
+AC_PATH_PROG([GREP], [grep], [/bin/grep], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([GREP])
+
+AC_PATH_PROG([INIT], [init], [/sbin/init], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([INIT])
+
+AC_PATH_PROG([INSMOD], [insmod], [/sbin/insmod], [$PATH:/sbin:/usr/sbin])
+AC_DEFINE_UNQUOTED(INSMOD_BIN, "${INSMOD}")
+AC_SUBST([INSMOD])
+
+AC_PATH_PROG([KILL], [kill], [/bin/kill], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([KILL])
+
+AC_PATH_PROG([LN], [ln], [/bin/ln], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([LN])
+
+AC_PATH_PROG([LS], [ls], [/bin/ls], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([LS])
+
+AC_PATH_PROG([LSMOD], [lsmod], [/sbin/lsmod], [$PATH:/sbin:/usr/sbin])
+AC_SUBST([LSMOD])
+
+AC_PATH_PROG([MAKE], [make], [None], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+
+AC_PATH_PROG([MKDIR], [mkdir], [/usr/bin/mkdir], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([MKDIR])
+
+AC_PATH_PROG([MKNOD], [mknod], [/bin/mknod], [$PATH:/sbin:/usr/sbin])
+AC_DEFINE_UNQUOTED(MKNOD_BIN, "${MKNOD}")
+AC_SUBST([MKNOD])
+
+AC_PATH_PROG([MORE], [more], [/bin/more], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([MORE])
+
+AC_PATH_PROG([MV], [mv], [/bin/mv], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([MV])
+
+AC_PATH_PROG([PS], [ps], [/bin/ps], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([PS])
+
+AC_PATH_PROG([RM], [rm], [/bin/rm], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([RM])
+
+AC_PATH_PROG([RMDIR], [rmdir], [/bin/rmdir], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([RMDIR])
+
+AC_PATH_PROG([RMMOD], [rmmod], [/sbin/rmmod], [$PATH:/sbin:/usr/sbin])
+AC_DEFINE_UNQUOTED(RMMOD_BIN, "${RMMOD}")
+AC_SUBST([RMMOD])
+
+AC_PATH_PROG([SED], [sed], [/bin/sed], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([SED])
+
+AC_PATH_PROG([SLEEP], [sleep], [/bin/sleep], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([SLEEP])
+
+AC_PATH_PROG([STTY], [stty], [/bin/stty], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([STTY])
+
+AC_PATH_PROG([TAR], [tar], [/bin/tar], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([TAR])
+
+AC_PATH_PROG([TR], [tr], [/usr/bin/tr], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([TR])
+
+AC_PATH_PROG([TOUCH], [touch], [/bin/touch], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([TOUCH])
+
+AC_PATH_PROG([TRUE], [true], [/bin/true], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([TRUE])
+
+AC_PATH_PROG([UDEVADM], [udevadm], [Not Found], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([UDEVADM])
+
+AC_PATH_PROG([UDEVCONTROL], [udevcontrol], [Not Found], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([UDEVCONTROL])
+
+AC_PATH_PROG([UDEVD], [udevd], [Not Found], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([UDEVD])
+
+AC_PATH_PROG([UDEVINFO], [udevinfo], [Not Found], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([UDEVINFO])
+
+AC_PATH_PROG([UNAME], [uname], [/bin/uname], [$PATH:/sbin:/usr/sbin:/bin:/usr/bin])
+AC_SUBST([UNAME])
+
+if test "$MAKE" = "None"
+then
+	echo ""
+	echo ""
+	echo "****************************************************************************"
+	echo "* Unable to locate the \"make\" command."
+	echo "*"
+	echo "* The Digi DGRP driver requires make to be installed on the system"
+	echo "* before being able to correctly build the driver."
+	echo "*"
+	echo "****************************************************************************"
+	echo ""
+	echo ""
+	AC_MSG_ERROR(Unable to find the make command. Failing configure script.)
+fi
+
+AC_MSG_CHECKING(for platform type)
+platform=`/bin/uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/`
+echo "$platform"
+
+dnl
+dnl  Try to find a compiler, go from kgcc -> gcc -> cc ...
+dnl
+
+
+AC_CHECK_PROG([KGCC], [gcc], [gcc])
+if test x"$KGCC" = x; then
+    AC_CHECK_PROG([KGCC], [kgcc], [kgcc])
+    if test x"$KGCC" = x; then
+        AC_CHECK_PROG([KGCC], [cc], [cc])
+        if test x"$KGCC" = x; then
+            echo ""
+            echo ""
+            echo "****************************************************************************"
+            echo "* Unable to locate a compiler in your current PATH or on your system."
+            echo "*"
+            echo "* The Digi RealPort driver requires a working compiler to be installed"
+            echo "* on the system before being able to correctly build the driver."
+            echo "****************************************************************************"
+            echo ""
+            AC_MSG_ERROR(Unable to find a working compiler. Failing configure script.)
+        fi
+    fi
+fi
+
+AC_SUBST([KGCC])
+
+CC=[$KGCC]
+AC_SUBST([CC])
+dnl AC_PROG_CC
+
+old_CFLAGS="$CFLAGS"   
+
+
+
+if test "$KGCC" = "gcc"; then
+    AC_MSG_CHECKING(for gcc version)
+
+    #gccver=`gcc -v 2>&1 | grep version | cut -d" " -f3 | tr -d a-z,A-Z,-`
+    gccver=`gcc -v 2>&1 | awk '$1 == "gcc" && $2 == "version" {print $3}'`
+
+    dnl We *MUST* avoid using []'s, so we will liberally use wildcards instead
+
+    case "${gccver}" in
+    3.2*|3.3*|3.4*|3.5*|3.6*|3.7*|3.8*|3.9*|4.*)
+        if test "$platform" = "i386"; then
+            echo ">= 3.2 ($gccver)"
+            CFLAGS=-O2
+            KCFLAGS="-O2 -march=i486 -falign-loops=2 -falign-jumps=2 -falign-functions=2 -fno-strict-aliasing -DCPU=586"
+       elif test "$platform" = "x86_64"; then
+            echo ">= 3.2 ($gccver)"
+            CFLAGS=-O2
+            KCFLAGS="-Wno-trigraphs -O2 -fno-strict-aliasing -fno-common \
+-mno-red-zone -mcmodel=kernel -pipe -fno-reorder-blocks -finline-limit=2000 \
+-fno-strength-reduce -Wno-sign-compare -fno-asynchronous-unwind-tables"
+        elif test "$platform" = "ia64"; then
+            echo ">= 3.2 ($gccver)"
+            CFLAGS=-O2
+            KCFLAGS="-D__KERNEL__ -Wall -Wstrict-prototypes -Wno-trigraphs -O2 \
+-fno-strict-aliasing -fno-common  -Wno-unused -fomit-frame-pointer -pipe  -ffixed-r13 \
+-mfixed-range=f10-f15,f32-f127 -falign-functions=32 -frename-registers \
+--param max-inline-insns=5000 -Os  -iwithprefix include"
+        elif test "$platform" = "ppc"; then
+            echo ">= 3.2 ($gccver)"
+            CFLAGS="-O2"
+            KCFLAGS="-O2"
+        elif test "$platform" = "ppc64"; then
+            echo ">= 3.2 ($gccver)"
+            CFLAGS="-O2 -m64"
+            KCFLAGS="-O2 -m64"
+        elif test "$platform" = "alpha"; then
+            echo ">= 3.2 ($gccver)"
+            KCFLAGS := $(KCFLAGS) -mno-fp-regs -ffixed-8
+        elif test "$platform" = "sparc64"; then
+            echo ">= 3.2 ($gccver)"
+            KGCC=sparc64-linux-gcc
+            KCFLAGS := $(KCFLAGS) -m64 -pipe -mno-fpu -mcpu=ultrasparc \
+                -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 \
+                -Wno-sign-compare
+	else
+            AC_MSG_RESULT([ "UnSupported Platform.."])
+            echo ""
+            echo ""
+            echo "****************************************************************************"
+            echo "* The Digi RealPort driver is supported only on the"
+            echo "* Intel x86 platform!"
+            echo "*"
+            echo "* Attempting to continue, hoping for the best..."
+            echo "****************************************************************************"
+            echo ""
+            CFLAGS=-O2
+            KCFLAGS="-O2"
+        fi
+    ;;
+    *)
+        if test "$platform" = "i386"; then
+            echo "< 3.2 ($gccver)"
+            CFLAGS=-O2
+            KCFLAGS="-O2 -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=586"
+        elif test "$platform" = "alpha"; then
+            echo "< 3.2 ($gccver)"
+            KCFLAGS := $(KCFLAGS) -mno-fp-regs -ffixed-8
+        elif test "$platform" = "sparc64"; then
+            echo "< 3.2 ($gccver)"
+            KGCC=sparc64-linux-gcc
+            KCFLAGS := $(KCFLAGS) -m64 -pipe -mno-fpu -mcpu=ultrasparc \
+                -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 \
+                -Wno-sign-compare
+	else
+            AC_MSG_RESULT([ "UnSupported Platform.."])
+            echo ""
+            echo ""
+            echo "****************************************************************************"
+            echo "* The Digi RealPort driver is supported only on the"
+            echo "* Intel x86 platform!"
+            echo "*"
+            echo "* Attempting to continue, hoping for the best..."
+            echo "****************************************************************************"
+            echo ""
+            CFLAGS=-O2
+            KCFLAGS="-O2"
+        fi
+    ;;
+    esac
+else
+    if test "$platform" = "i386"; then
+        CFLAGS=-O2
+        KCFLAGS="-O2 -m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=586"
+    elif test "$platform" = "alpha"; then
+        KCFLAGS := $(KCFLAGS) -mno-fp-regs -ffixed-8
+    elif test "$platform" = "sparc64"; then
+        KGCC=sparc64-linux-gcc
+        KCFLAGS := $(KCFLAGS) -m64 -pipe -mno-fpu -mcpu=ultrasparc \
+            -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 \
+            -Wno-sign-compare
+    else
+        echo ""
+        echo ""
+        echo "****************************************************************************"
+        echo "* The Digi RealPort driver is supported only on the"
+        echo "* Intel x86 platform!"
+        echo "*"
+        echo "* Attempting to continue, hoping for the best..."
+        echo "****************************************************************************"
+        echo ""
+        CFLAGS=-O2
+        KCFLAGS="-O2"
+    fi
+fi
+
+
+AC_SUBST([KCFLAGS])
+
+
+AC_TRY_RUN(main(){exit(0);},,
+exec 5>&2
+eval $ac_link
+AC_NOTE(CC=$CC; CFLAGS=$CFLAGS; LIBS=$LIBS;)
+AC_NOTE($ac_compile)
+AC_MSG_ERROR(Can't run the compiler - sorry))
+      
+AC_TRY_RUN([
+main() 
+{ 
+   int __something_strange_();
+   __something_strange_(0);
+}
+],AC_MSG_ERROR(Your compiler does not set the exit status - sorry))
+
+
+dnl
+dnl	Get current running kernel version...
+dnl	Allow the user to sneak in with the env var called
+dnl     LINUX_KERNEL_VERSION set to real kernel they want to build for...
+dnl     This essentially lets them fake what version of the kernel
+dnl     they want to compile for...
+
+
+AC_MSG_CHECKING(for current kernel version)
+
+if test ! -z "$LINUX_KERNEL_VERSION"; then
+	krunrev=${LINUX_KERNEL_VERSION}
+	AC_MSG_RESULT([ $krunrev (From environmental variable LINUX_KERNEL_VERSION)])
+	AC_DEFINE_UNQUOTED(KERNEL_RUNNING_VERSION, "$krunrev")
+elif test -f /bin/uname ; then
+
+	dnl real version
+	krunrev=`/bin/uname -r`
+
+	dnl version with all alpha chars stripped out.
+	krunrev1=`echo $krunrev | tr -d a-z,A-Z`
+
+	dnl version with extraversion cut off (if it exists)
+	krunrev2=`echo $krunrev1 | sed -e "s/-.*//g"`
+
+	AC_MSG_RESULT([ $krunrev -> $krunrev1 -> $krunrev2])
+	AC_DEFINE_UNQUOTED(KERNEL_RUNNING_VERSION, "$krunrev")
+fi
+
+
+dnl
+dnl Now, try to find matching kernel headers...
+dnl
+        
+AC_MSG_CHECKING(for kernel headers)
+
+# Not needed for now, but might be someday, so I am leaving this.
+#if test -f /lib/modules/${krunrev}/source/include/linux/autoconf.h;
+#then
+#        KERNEL_HEADERS=/lib/modules/${krunrev}/source
+
+if test -f /lib/modules/${krunrev}/build/include/linux/autoconf.h;
+then
+        KERNEL_HEADERS=/lib/modules/${krunrev}/build
+
+elif test -f /lib/modules/${krunrev}/build/include/generated/autoconf.h;
+then
+        KERNEL_HEADERS=/lib/modules/${krunrev}/build
+
+elif test -d /usr/src/linux-${krunrev}/include;
+then
+	KERNEL_HEADERS=/usr/src/linux-${krunrev}
+elif test -d /usr/src/linux-${krunrev1}/include;
+then
+	KERNEL_HEADERS=/usr/src/linux-${krunrev1}
+elif test -d /usr/src/linux-${krunrev2}/include;
+then
+	KERNEL_HEADERS=/usr/src/linux-${krunrev2}
+fi
+
+
+dnl Okay, so if we didn't find anything we recognized...
+dnl Last ditch effort... Lets go look at /usr/src and see if "linux"
+dnl exists.  If it does, lets see if "include" is also there.
+dnl If it exists... Lets just default to that, and hope for the best.
+
+if test -z "$KERNEL_HEADERS";
+then
+    if test -d /usr/src/linux;
+    then
+        if test -d /usr/src/linux/include;
+        then
+            KERNEL_HEADERS=/usr/src/linux
+        fi
+    fi
+fi
+
+if test -z "$KERNEL_HEADERS";
+then
+    AC_MSG_RESULT([ "Not found."])
+    echo ""
+    echo ""
+    echo "****************************************************************************"
+    echo "* Unable to locate matching kernel source for the"
+    echo "* linux ${krunrev} kernel that is currently running!"
+    echo "*"
+    echo "* The Digi RealPort driver requires this linux kernel source to be"
+    echo "* installed as /usr/src/linux-${krunrev} before being able to correctly"
+    echo "* build the driver."
+    echo "*"
+    echo "* Please install the kernel sources which must match the running"
+    echo "* linux ${krunrev} kernel, and then try installing again."
+    echo "****************************************************************************"
+    echo ""
+    AC_MSG_ERROR(Unable to find kernel headers. Failing configure script.)
+else
+    AC_DEFINE_UNQUOTED(KERNEL_HEADERS, "${KERNEL_HEADERS}")
+    AC_MSG_RESULT([ "${KERNEL_HEADERS}"])
+    CFLAGS="$CFLAGS"
+    KCFLAGS="$KCFLAGS"
+    KINC="-I${KERNEL_HEADERS}/include"
+    AC_SUBST([KERNEL_HEADERS])
+    AC_SUBST([KCFLAGS])
+    AC_SUBST([KINC])
+fi
+
+# Get extraversion from the Makefile, don't trust uname -r
+AC_MSG_CHECKING(extra version of kernel)
+KTEMP=`grep "EXTRAVERSION =" $KERNEL_HEADERS/Makefile`
+KTEMP2=`echo $KTEMP | cut -d" " -f3`
+    
+#KEXTRAVERSION=`echo $KTEMP2 | tr -d a-z,A-Z,-`
+    
+KEXTRAVERSION=$KTEMP2 
+if test -z "$KEXTRAVERSION"; then
+KEXTRAVERSION=0
+fi
+
+AC_MSG_RESULT([ $KEXTRAVERSION ])
+AC_DEFINE_UNQUOTED(KERNEL_EXTRAVERSION, $KEXTRAVERSION)
+
+# Get whether they are SMP or not.
+AC_MSG_CHECKING(if running kernel was compiled for SMP)
+KTEMP=`uname -v | grep SMP`
+if test -z "$KTEMP"; then
+	AC_MSG_RESULT([ No ])
+	AC_SUBST([SMP])
+else
+	AC_MSG_RESULT([ Yes ])   
+	SMP=SMP
+	AC_SUBST([SMP])
+fi
+
+dnl	Tell user if we will be using kbuild.
+AC_MSG_CHECKING(what type of build we will do)
+
+osrel=`/bin/uname -r`
+case "${osrel}" in
+
+	2.4*)
+		rm -f driver/build
+		(cd driver;ln -s 2.4.1 build)
+		cp driver/build/Makefile24 driver/build/Makefile.in
+	;;
+
+	2.5.*|2.6.[[0-9]]|2.6.1[[0-9]]|2.6.2[[0-6]])
+		KBUILD=yes
+		rm -f driver/build
+		(cd driver;ln -s 2.4.1 build)
+		cp driver/build/Makefile26 driver/build/Makefile.in
+	;;
+
+	2.5.*|2.6.[[0-9]]-*|2.6.1[[0-9]]-*|2.6.2[[0-6]]-*)
+		KBUILD=yes
+		rm -f driver/build
+		(cd driver;ln -s 2.4.1 build)
+		cp driver/build/Makefile26 driver/build/Makefile.in
+	;;
+
+	2.5.*|2.6.[[0-9]].*|2.6.1[[0-9]].*|2.6.2[[0-6]].*)
+		KBUILD=yes
+		rm -f driver/build
+		(cd driver;ln -s 2.4.1 build)
+		cp driver/build/Makefile26 driver/build/Makefile.in
+	;;
+
+	*)
+		KBUILD=yes
+		rm -f driver/build
+		(cd driver;ln -s 2.6.27 build)
+		cp driver/build/Makefile26 driver/build/Makefile.in
+	;;
+esac
+
+if test x"$KBUILD" = x; then
+	AC_MSG_RESULT([non-KBUILD.])
+else
+	AC_MSG_RESULT([KBUILD.])
+fi
+
+
+
+
+dnl	If the environment variable MODDIR is defined, we use this as the directory
+dnl	to install the driver module.
+dnl	Otherwise we always install into /lib/modules/`uname -r`/misc
+
+AC_MSG_CHECKING(for modules directory)
+if test x"$MODDIR" = x; then
+
+	osrel=`/bin/uname -r`
+
+	# We will always toss the module into the "misc" directory.
+	if test -d /lib/modules/${osrel}; then
+		if test ! -d /lib/modules/${osrel}/misc; then
+			mkdir -p /lib/modules/${osrel}/misc
+		fi
+		MODDIR="/lib/modules/${osrel}"
+	else
+		mkdir -p /lib/modules/${osrel}/misc
+		MODDIR="/lib/modules/${osrel}"
+	fi
+fi
+
+
+AC_DEFINE_UNQUOTED(MODDIR, "${MODDIR}")
+AC_MSG_RESULT([ "${MODDIR}"])
+AC_SUBST([MODDIR])
+
+
+# Search for OpenSSL
+# The SSL routines below all were taken from the OpenSSH configure.ac
+# All credit goes to those guys.
+
+saved_CPPFLAGS="$CPPFLAGS"
+saved_LDFLAGS="$LDFLAGS"
+saved_LIBS="$LIBS"
+
+AC_ARG_WITH(ssl-dir,
+	[  --with-ssl-dir=PATH     Specify path to OpenSSL installation ],
+	[
+		if test "x$withval" != "xno" ; then
+			if test -d "$withval/lib"; then
+				if test -n "${need_dash_r}"; then
+					LDFLAGS="-L${withval}/lib -R${withval}/lib ${LDFLAGS}"
+				else
+					LDFLAGS="-L${withval}/lib ${LDFLAGS}"
+				fi
+			else
+				if test -n "${need_dash_r}"; then
+					LDFLAGS="-L${withval} -R${withval} ${LDFLAGS}"
+				else
+					LDFLAGS="-L${withval} ${LDFLAGS}"
+				fi
+			fi
+			if test -d "$withval/include"; then
+				CPPFLAGS="-I${withval}/include ${CPPFLAGS}"
+			else
+				CPPFLAGS="-I${withval} ${CPPFLAGS}"
+			fi
+		fi
+	]
+)
+
+# Determine OpenSSL header version
+AC_MSG_CHECKING([OpenSSL header version])
+AC_TRY_RUN(
+	[
+#include <stdio.h>
+#include <string.h>
+#include <openssl/opensslv.h>
+#define DATA "conftest.sslincver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+
+	if ((rc = fprintf(fd ,"%x (%s)\n", OPENSSL_VERSION_NUMBER, OPENSSL_VERSION_TEXT)) <0)
+		exit(1);
+
+	exit(0);
+}
+	],
+	[
+		ssl_header_ver=`cat conftest.sslincver`
+		AC_MSG_RESULT($ssl_header_ver)
+	],
+	[
+		AC_MSG_RESULT([ "Not found."])
+		echo ""
+		echo ""
+		echo "******************************************************************************"
+		echo "* Unable to locate the OpenSSL headers!"
+		echo "*"
+		echo "* The Digi RealPort driver requires the OpenSSL layer."
+		echo "*"
+		echo "* This driver will use the shipped version of the OpenSSL package that comes"
+		echo "* with this driver package."
+		echo "*"
+		echo "* There will be a considerable amount of extra time spent"
+		echo "* compiling this driver package (anywhere from 5 - 60 minutes),"
+		echo "* because the OpenSSL library will also be compiled."
+		echo "******************************************************************************"
+		echo ""
+
+		sleep 2
+
+		NEEDSSL=yes
+	]
+)
+
+
+if test x"$NEEDSSL" = x; then
+
+LIBS="$LIBS -lcrypto"
+AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
+	[
+		dnl Check default openssl install dir
+		if test -n "${need_dash_r}"; then
+			LDFLAGS="-L/usr/local/ssl/lib -R/usr/local/ssl/lib ${saved_LDFLAGS}"
+		else
+			LDFLAGS="-L/usr/local/ssl/lib ${saved_LDFLAGS}"
+		fi
+		CPPFLAGS="-I/usr/local/ssl/include ${saved_CPPFLAGS}"
+		AC_TRY_LINK_FUNC(RAND_add, AC_DEFINE(HAVE_OPENSSL),
+			[
+
+				echo ""
+				echo ""
+				echo "******************************************************************************"
+				echo "* Unable to locate the OpenSSL libcrypto library!"
+				echo "*"
+				echo "* The Digi RealPort driver requires the OpenSSL libcrypto library."
+				echo "*"
+				echo "* This driver will use the shipped version of the OpenSSL package that comes"
+				echo "* with this driver package."
+				echo "*"
+				echo "* There will be a considerable amount of extra time spent"
+				echo "* compiling this driver package (anywhere from 5 - 60 minutes),"
+				echo "* because the OpenSSL library will also be compiled."
+				echo "******************************************************************************"
+				echo ""
+
+				sleep 2
+
+				NEEDSSL=yes
+
+			]
+		)
+	]
+)
+
+fi
+
+
+if test x"$NEEDSSL" = x; then
+
+# Determine OpenSSL library version
+AC_MSG_CHECKING([OpenSSL library version])
+AC_TRY_RUN(
+	[
+#include <stdio.h>
+#include <string.h>
+#include <openssl/opensslv.h>
+#include <openssl/crypto.h>
+#define DATA "conftest.ssllibver"
+int main(void) {
+        FILE *fd;
+        int rc;
+
+        fd = fopen(DATA,"w");
+        if(fd == NULL)
+                exit(1);
+
+	if ((rc = fprintf(fd ,"%x (%s)\n", SSLeay(), SSLeay_version(SSLEAY_VERSION))) <0)
+		exit(1);
+
+	exit(0);
+}
+	],
+	[
+		ssl_library_ver=`cat conftest.ssllibver`
+		AC_MSG_RESULT($ssl_library_ver)
+	],
+	[
+		AC_MSG_RESULT([ "Not found."])
+		echo ""
+		echo ""
+		echo "******************************************************************************"
+		echo "* Unable to locate the OpenSSL library!"
+		echo "*"
+		echo "* The Digi RealPort driver requires the OpenSSL library."
+		echo "*"
+		echo "* This driver will use the shipped version of the OpenSSL package that comes"
+		echo "* with this driver package."
+		echo "*"
+		echo "* There will be a considerable amount of extra time spent"
+		echo "* compiling this driver package (anywhere from 5 - 60 minutes),"
+		echo "* because the OpenSSL library will also be compiled."
+		echo "******************************************************************************"
+		echo ""
+
+		sleep 2
+
+		NEEDSSL=yes
+
+	]
+)
+
+fi
+
+
+
+if test x"$NEEDSSL" = x; then
+
+# Sanity check OpenSSL headers
+AC_MSG_CHECKING([whether OpenSSL's headers match the library])
+AC_TRY_RUN(
+	[
+#include <string.h>
+#include <openssl/opensslv.h>
+int main(void) { exit(SSLeay() == OPENSSL_VERSION_NUMBER ? 0 : 1); }
+	],
+	[
+		AC_MSG_RESULT(yes)
+	],
+	[
+		AC_MSG_RESULT([ "no"])
+		echo ""
+		echo ""
+		echo "******************************************************************************"
+		echo "* Your OpenSSL headers do not match your library!"
+		echo "*"
+		echo "* The Digi RealPort driver requires the OpenSSL header version to match"
+		echo "* the OpenSSL library version installed on your system."
+		echo "*"
+		echo "* This driver will use the shipped version of the OpenSSL package that comes"
+		echo "* with this driver package."
+		echo "*"
+		echo "* There will be a considerable amount of extra time spent"
+		echo "* compiling this driver package (anywhere from 5 - 60 minutes),"
+		echo "* because the OpenSSL library will also be compiled."
+		echo "******************************************************************************"
+		echo ""
+
+		sleep 2
+
+		NEEDSSL=yes
+	]
+)
+
+fi
+
+
+if test x"$NEEDSSL" = x; then
+AC_MSG_CHECKING([whether your OpenSSL version is current enough])
+AC_TRY_RUN(
+	[
+#include <string.h>
+#include <openssl/opensslv.h>
+int main(void) { exit( (OPENSSL_VERSION_NUMBER >= 0x0090700f) ? 0 : 1); }
+	],
+	[
+		AC_MSG_RESULT(yes)
+	],
+	[
+		AC_MSG_RESULT([ "no"])
+		echo ""
+		echo ""
+		echo "******************************************************************************"
+		echo "* Your OpenSSL version is not current enough!"
+		echo "*"
+		echo "* The Digi RealPort driver requires the OpenSSL version to be at least 0.9.7"
+		echo "*"
+		echo "* This driver will use the shipped version of the OpenSSL package that comes"
+		echo "* with this driver package."
+		echo "*"
+		echo "* There will be a considerable amount of extra time spent"
+		echo "* compiling this driver package (anywhere from 5 - 60 minutes),"
+		echo "* because the OpenSSL library will also be compiled."
+		echo "******************************************************************************"
+		echo ""
+
+		sleep 2
+
+		NEEDSSL=yes
+	]
+)
+
+fi
+
+
+if test x"$NEEDSSL" = x; then
+NEEDSSL=no
+fi
+
+CPPFLAGS="$saved_CPPFLAGS"
+LDFLAGS="$saved_LDFLAGS"
+LIBS="$saved_LIBS"
+
+
+AC_SUBST([NEEDSSL])
+
+dnl
+dnl    ****  termcap or terminfo  ****
+dnl
+AC_CHECKING(for tgetent)
+AC_TRY_LINK(,tgetent((char *)0, (char *)0);,,
+olibs="$LIBS"
+LIBS="-lncurses $olibs" 
+AC_CHECKING(for libncurses)
+AC_TRY_LINK(,[
+tgetent((char *)0, (char *)0);
+],AC_DEFINE(USING_NCURSES),
+LIBS="-ltermcap $olibs"
+AC_CHECKING(for libtermcap)
+AC_TRY_LINK(,tgetent((char *)0, (char *)0);,AC_DEFINE(USING_TERMCAP),
+LIBS="-ltermlib $olibs" 
+AC_CHECKING(for libtermlib)
+AC_TRY_LINK(,tgetent((char *)0, (char *)0);,AC_DEFINE(USING_TERMLIB),
+LIBS="-lcurses $olibs"
+AC_CHECKING(for libcurses)
+AC_TRY_LINK(,tgetent((char *)0, (char *)0);,AC_DEFINE(USING_CURSES),
+CURSES_ERROR=1)))))
+
+
+if test ! -z "$CURSES_ERROR"; then
+	echo ""
+	echo ""
+	echo "****************************************************************************"
+	echo "* Unable to locate a working curses library."
+	echo "*"
+	echo "* The Digi RealPort driver requires a working curses library to be installed"
+	echo "* on the system before being able to correctly build the driver."
+	echo "*"
+	echo "* This library can either be ncurses/curses/termcap."
+	echo "*"
+	echo "* NOTE: If you are under SuSE 8.0 or 9.1, please install the"
+	echo "* \"ncurses-devel\" package, then start the installation"
+	echo "* of the DGRP package again."
+	echo "*"
+	echo "* Please install a working curses library on your system,"
+	echo "* and then try installing again."
+	echo "****************************************************************************"
+	echo ""
+	AC_MSG_ERROR(Unable to find a working curses. Failing configure script.)
+fi
+
+dnl check to see if user changed default man dir
+if test "$mandir" = "\${prefix}/man"; then
+mandir=/usr/share/man
+fi
+
+AC_MSG_CHECKING(if Distro specified)
+
+AC_ARG_WITH(DISTRO, [ ], [ DISTRO="${withval}" ])
+AC_ARG_WITH(DISTR, [ ], [ DISTR="${withval}" ])
+AC_ARG_WITH(DIST, [ ], [ DISTRO="${withval}" ])
+        
+if test x"$DISTRO" = x; then
+	DISTRO=$DISTR
+fi
+
+if test x"$DISTRO" = x; then
+	DISTRO=$DIST
+fi
+
+if test ! x"$DISTRO" = x; then
+	DISTRO=`echo $DISTRO | ${TR} "[a-z]" "[A-Z]"`
+	AC_MSG_RESULT(${DISTRO})
+	AC_SUBST([DISTRO])
+else
+	DISTRO=NO_DISTRO
+	AC_MSG_RESULT(None)
+	AC_SUBST([DISTRO])
+fi
+
+AC_MSG_CHECKING(if New TTY Locking was specified)
+AC_ARG_WITH(NEW_TTY_LOCKING, [ ], [ NEW_TTY_LOCKING="${withval}" ])
+
+if test ! x"$NEW_TTY_LOCKING" = x; then
+	AC_MSG_RESULT(Yes - With a value of "${NEW_TTY_LOCKING}")
+	AC_SUBST([NEW_TTY_LOCKING])
+else
+	NEW_TTY_LOCKING=No
+	AC_MSG_RESULT(No - Defaulting to a value of "No")
+	AC_SUBST([NEW_TTY_LOCKING])
+fi
+
+AC_MSG_CHECKING(if New TTY Buffering was specified)
+AC_ARG_WITH(NEW_TTY_BUFFERING, [ ], [ NEW_TTY_BUFFERING="${withval}" ])
+
+if test ! x"$NEW_TTY_BUFFERING" = x; then
+	AC_MSG_RESULT(Yes - With a value of "${NEW_TTY_BUFFERING}")
+	AC_SUBST([NEW_TTY_BUFFERING])
+else
+	NEW_TTY_BUFFERING=No
+	AC_MSG_RESULT(No - Defaulting to a value of "No")
+	AC_SUBST([NEW_TTY_BUFFERING])
+fi
+
+
+dnl	Do UDEV checking...
+
+AC_MSG_CHECKING(if UDEV checking is overridden)
+AC_ARG_WITH(UDEV_SUPPORT, [ ], [ UDEV_SUPPORT="${withval}" ])
+
+if test ! x"$UDEV_SUPPORT" = x
+then
+	AC_MSG_RESULT(Yes - With a value of "${UDEV_SUPPORT}")
+
+	if test "$UDEV_SUPPORT" = "Yes"
+	then
+		UDEV_SUPPORT=1
+		AC_SUBST([UDEV_SUPPORT])
+		REGISTER_TTYS_WITH_SYSFS=Yes
+		AC_SUBST([REGISTER_TTYS_WITH_SYSFS])
+	else
+		UDEV_SUPPORT=0
+		AC_SUBST([UDEV_SUPPORT])
+		REGISTER_TTYS_WITH_SYSFS=No
+		AC_SUBST([REGISTER_TTYS_WITH_SYSFS])
+	fi
+
+else
+
+	AC_MSG_RESULT([ No ])
+
+	AC_MSG_CHECKING(if UDEV exists)
+	if test "$UDEVINFO" = "Not Found"
+	then
+		UDEV_SUPPORT=0
+		AC_MSG_RESULT([ No ])
+		AC_SUBST([UDEV_SUPPORT])
+		REGISTER_TTYS_WITH_SYSFS=No
+		AC_SUBST([REGISTER_TTYS_WITH_SYSFS])
+	else
+		AC_MSG_RESULT([ Yes ])
+		AC_MSG_CHECKING(if UDEV version in use is greater than 040)
+		udev_version=`$UDEVINFO -V | tr -d a-zA-Z," "`
+		if test $udev_version -gt 040
+		then
+			UDEV_SUPPORT=1
+			AC_MSG_RESULT([ Yes, $udev_version ])
+			AC_SUBST([UDEV_SUPPORT])
+			REGISTER_TTYS_WITH_SYSFS=Yes
+			AC_SUBST([REGISTER_TTYS_WITH_SYSFS])
+		else
+			UDEV_SUPPORT=0
+			AC_MSG_RESULT([ No, $udev_version ])
+			AC_SUBST([UDEV_SUPPORT])
+			REGISTER_TTYS_WITH_SYSFS=No
+			AC_SUBST([REGISTER_TTYS_WITH_SYSFS])
+		fi
+	fi
+fi
+
+
+FULLPACKAGE=FULLPACKAGE
+AC_SUBST([FULLPACKAGE])
+
+AC_OUTPUT(Makefile driver/build/Makefile daemon/Makefile ditty/Makefile config/Makefile dparp/os/Makefile.Linux dgipserv/Makefile.linux dgelreset/Makefile.linux init/dgrp_udev init/Makefile, [[
+# a hook for preserving undef directive in config.h
+mv commoninc/config.h conftest
+sed -e 's@^\(.*\)defin.\( .*\) .*/\*\(.*KEEP_UNDEF_HERE\)@\1undef\2     /\*\3@' < conftest > commoninc/config.h
+rm -f conftest
+]])

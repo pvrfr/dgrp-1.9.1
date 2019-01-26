@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Copyright 2006 by Digi International (www.digi.com)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+#
+# UDEV script for the DIGI DGRP RealPort driver.
+#
+
+# Translate all underscores to spaces.
+STRING1=`echo "$1" | @TR@ "_" " "`
+
+# Parse out the various things we need.
+TYPE=`echo $STRING1 | @AWK@ '{print $1}'`
+NAME=`echo $STRING1 | @AWK@ '{print $3}'`
+TMPPORT=`echo $STRING1 | @AWK@ '{print $4}'`
+
+# Pad out the name correctly.
+case $TMPPORT in
+	?) PORT=0$TMPPORT;;
+	??) PORT=$TMPPORT;;
+	???) PORT=$TMPPORT;;
+esac
+
+echo "$TYPE$NAME$PORT"

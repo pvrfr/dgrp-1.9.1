@@ -1,0 +1,277 @@
+. Copyright (c) 1998 Digi International, All Rights Reserved.
+.
+. $Id: dgrp_gui.man,v 1.9 2003/08/06 19:59:55 scottk Exp $
+.
+.TH DGRP_GUI 8 "January 17, 2000"
+.SH NAME
+dgrp_gui - Digi RealPort Manager
+.SH SYNOPSIS
+.B /usr/bin/dgrp/config/dgrp_gui
+.SH DESCRIPTION
+.B dgrp_gui
+is an X application that allows you to add, delete, and configure
+Digi RealPort-enabled products, as well as start and stop 
+Digi RealPort daemons.  One can also monitor the modem status of 
+selected ports.
+As part of the RealPort driver package, 
+this package is a graphic
+user interface for
+.B dgrp_cfg_node(8),
+and those who are not using X, or do not have access to
+a tcl interpreter should use this text based script
+instead.
+.SH THE MAIN SCREEN: Digi RealPort Manager
+This is the list box view of all RealPort-enabled products currently 
+configured for use on the machine.
+.SH How To Add a Product
+There are two ways to register a new remote device.  Either 
+press the 
+.B Add 
+button that appears on the bottom of the 
+main screen, or choose the 
+.B RealPort->Add New 
+menu option.
+You will then need to  specify values for
+each of the fields in the 
+.B Digi RealPort Device Settings
+window.  
+When you are done, press the
+.B Commit
+button and you will see the 
+.B RealPort Command Logger 
+window with the appropriate dgrp_cfg_node
+command.  Press the 
+.B Run it
+button to finish adding and initializing 
+your Digi One, EtherLite, or PortServer.  Watch for any errors 
+in the log window.
+.PP
+You can press
+.B Cancel 
+at any time in the RealPort Device Settings window,
+or
+.B Exit 
+in the Command Logger 
+to cancel the addition.
+.SS RealPort Device Settings
+.TP
+.I id 
+must be one or two alphanumeric character, for example
+"aa" or "P".  
+This id must be unique to your system, so that no two 
+devices are to use the same id.
+.TP
+.I address 
+may be specified as an IP number,
+or IP name.  No name look up is done  to see if the
+machine can connect to the specified address.
+.TP
+.I ports 
+is a decimal indicating the number of 
+device files which should be created for this particular 
+unit.  This does not have to match the physical number 
+of ports,
+but physical ports beyond the number specified will not
+be available.  Maximum is 64.
+.TP
+.I IP Port
+RealPort port number (if not default).
+.TP
+.I Encrypt
+Option to always use encryption, or never. (default is never).
+.TP
+.I Encrypt IP Port
+RealPort with encryption port number (if not default).
+.TP
+.I Access Mode
+Set the file protection mode.
+.TP
+.I Owner
+Set the user ID of the file owner.  
+Value must be an integer.
+.TP
+.I Group
+Set the group ID of the file owner.  
+Value must be an integer.
+.TP
+.I Link Speed
+Set the link speed string.  The default is "auto".
+See the 
+.B drpd(8) 
+man page for information on the 
+custom speed parameters.
+.SH How To Delete a Product
+First highlight the fated unit in the 
+list box, then
+either press the 
+.B Delete
+button that appears on the bottom of the main
+screen, or choose the 
+.B RealPort->Delete / Uninitialize
+menu option.  This will bring up the 
+.B Digi RealPort Device Settings
+window, where you can view the current
+settings for the chosen unit.
+To confirm your choice, press the
+.B Remove 
+button, and you will then be presented with the
+.B RealPort Command Logger
+window with the appropriate dgrp_cfg_node command.
+Press the 
+.B Run it 
+button to complete the removal of the product along
+with all it's device nodes.
+.PP
+You can press 
+.B Cancel 
+at any time in the RealPort Device Settings window, or
+.B Exit
+in the Command Logger to cancel the removal.
+.SS WARNING
+Be sure that none of the ports are being used
+before trying to remove the device.
+.SH How To Configure an Existing Product
+First select the product to be modified
+by higlighting it in the main window's list box.
+Then either press the 
+.B Configure
+button in the bottom right hand corner, or 
+pull down the 
+.B RealPort->Configure / Initialize
+menu option.
+This will display the 
+.B Digi RealPort Device Settings 
+window, where you can modify any of the values you wish 
+except the
+.I major number
+and
+.I id.
+To commit your changes, press the 
+.B Commit 
+button, and you will see the 
+.B RealPort Command Logger 
+window with the 
+dgrp_cfg_node command reflecting your changes.
+Press the 
+.B Run it
+button to make the changes.  
+.PP
+Pressing
+.B Exit 
+from the Command Logger will cancel your
+modifications, as will
+.B Cancel
+from the RealPort Device Settings window.
+Also, if after changing some of the text entry fields
+you decide you want to start again from the original settings,
+pressing
+.B Revert 
+in the RealPort Device Settings window will 
+display the original settings and ignore 
+any modification of the text fields.
+.SH Starting and Stopping Daemons
+To start a daemon for a selected PortSever,
+first highlight the entry in the 
+main screen list box,
+then choose the pull down
+menu option
+.B Daemon->Start Daemon.
+The Command Logger screen will be displayed
+with the appropriate dgrp_cfg_node command.
+Pressing 
+.B Run it
+will attempt to start a daemon for the 
+unit, quitting quietly if it detects 
+a daemon is already running.
+.PP
+Choose the 
+.B Daemon->Stop Daemon
+pull down menu option to stop a daemon
+running for the selected device.
+.SH Viewing the Port Status
+First select the unit that you are
+interested in from the main screen's
+list box.
+By choosing  the menu option
+.B View->Ports
+you can view the current status of this
+unit's ports.
+.SH THE PORTS WINDOW: Digi RealPort Manager -- Ports
+This is the list box view of all the ports
+for the selected product.
+Press the 
+.B Refresh 
+box at any time to update the port 
+configuration list.
+.SS Port Configuration
+.TP
+.I Port
+refers to the port number
+.TP
+.I Status
+is one of OPEN, CLOSED, or WAITING.  A port
+has the WAITING status when it is already 
+in use, and there are others waiting on open.
+(?????)
+.TP 
+.I Speed
+If the port has been open and its speed
+set, the speed value is shown in bps.  If
+not, the value 0 is shown.
+.TP
+.I Description
+This will be one of 
+.B tty 
+or 
+.B cu 
+corresponding
+to the port having an OPEN status for one of these
+devices.  If the port is not open, or the type 
+is undetermined, this
+column will show NA.
+(This field is not yet active and will always 
+show NA.)
+.SH How to Check a Port's Status
+First highlight the port number of intrest 
+by clicking your mouse on it.
+Note that you can only view the status of
+one port at a time.
+Then choose the pull down menu option 
+.B Ports->Modem Status
+to view the current status of its modem flags.
+(This is not yet correct for a closed port.)
+You will see the 
+.B Port Status
+window showing a red checkbox for 
+on, and a grey checkbox for off.
+You can change the update delay 
+by using
+the sliding
+scale along the bottom of the window.
+.SH REQUIRES
+/usr/bin/dgrp/config/dgrp_cfg_node
+.br
+/usr/bin/dgrp/config/dgrp_mk_spec
+.br
+/usr/bin/dgrp/config/dgrp_mk_specs
+.br
+/usr/bin/dgrp/config/dgrp.gif
+.br
+/usr/bin/dgrp/config/dgrp_gui
+.br
+/usr/bin/wish or some other tcl interpreter
+.SH FILES
+/etc/dgrp.backing.store
+.br
+/proc/dgrp/config
+.br
+/proc/dgrp/ports/<id>
+.br
+.SH HISTORY
+First released in January, 2000
+.SH "SEE ALSO"
+.BR ditty-rp (1),
+.BR drpd (8),
+.BR dgrp (8),
+.BR dgrp_cfg_node (8)
+

@@ -1,0 +1,359 @@
+. Copyright (c) 1998 Digi International, All Rights Reserved.
+.
+. $Id: dgrp.man,v 1.1 2008/12/22 20:02:53 scottk Exp $
+.
+.TH DGRP 8 "January 14, 2000"
+.SH NAME
+dgrp - Digi RealPort driver
+.SH SYNOPSIS
+.TP 14
+.BI /dev/tty XN
+- general tty and dialin devices
+.TP
+.BI /dev/pr XN
+- transparent print devices
+.TP
+.BI /dev/cu XN
+- modem dialout devices
+.TP 10
+where:
+X is one or two alphanumeric characters, and
+.br
+N is a two digit number in the range 01 to 64.
+.SH DESCRIPTION
+The Digi Realport driver makes the ports on a RealPort client such
+as a Digi Portserver appear
+as though they are local tty devices directly attached to the
+computer.
+One instance of the Realport daemon
+.BR drpd (8)
+is required for communication with each unit.
+.PP
+The tty devices associated with a given product become enabled
+when the daemon first establishes communication with it.
+They remain enabled until the daemon exits.
+.PP
+In the current implementation,
+up to 1000 RealPort-enabled Products are supported.
+There are no kernel parameter changes required after
+initial driver installation;
+the driver automatically allocates system resources
+as they are needed.
+.SH "DEVICES"
+.PP
+Each RealPort-enabled product is represented by 
+multiple tty-style devices named
+.BI /dev/tty XN,
+.BI /dev/pr XN
+and
+.BI /dev/cu XN .
+The tty devices are all suffixed with a common
+one or two character alphanumeric
+string followed by a two-digit port number from 01 to 64.
+The alphanumeric substring is assigned by the System
+Administrator with the
+.BR dgrp_cfg_node (8)
+command.
+.PP
+For each physical asynchronous port on the unit, there
+are 3 tty-style devices.
+These devices all have
+.BR termio (7)
+behavior and behave as directly
+connected tty devices.
+.PP
+The
+.BI /dev/tty XN
+devices are classic modem-controlled tty ports,
+suitable for user logins from terminals or modems.
+They block on
+the open
+when the port is busy or otherwise unavailable,
+and when carrier is not present.
+.PP
+The
+.BI /dev/pr XN
+devices are transparent print devices,
+designed to send data through a terminal to an attached printer.
+Data sent to these devices goes out bracketed
+by printer-on and printer-off sequences.
+In this mode data directed to the terminal has priority
+over the printer, and printer data flow is throttled by several
+.BR ditty-rp (1)
+settable parameters to improve terminal response.
+.PP
+When both the terminal and printer devices are open,
+shared port settings, such as baud rate and character format
+are taken from the terminal device,
+and automatically duplicated in the printer settings.
+.PP
+When only the printer device is accessed its characteristics are
+identical to the terminal device.
+However the printer device may never be used
+to read input data.
+.PP
+Since both the
+.BI /dev/tty XN
+and
+.BI /dev/pr XN
+devices have modem behavior appropriate for incoming modem
+connections,
+they are both referred to as
+.I dialin
+devices.
+.PP
+The
+.BI /dev/cu XN
+devices are classic Berkeley style modem callout devices,
+also known as
+.I dialout
+devices.
+They may be opened and operated without carrier,
+however once carrier is established,
+a drop in carrier causes a hangup.
+.PP
+These ports open without delay,
+as though a non-blocking open was requested.
+If they cannot be opened promptly, the open fails.
+.PP
+Its not possible for a dialin and dialout device to both
+be open at the same time.
+.PP
+Its recommended that the
+.BI /dev/tty XN
+devices be
+referenced in
+.I /etc/inittab
+and
+.I /etc/ttytab
+for login operation.
+If its not convenient to wire DCD to the device,
+the command
+.I "ditty-rp forcedcd"
+can be used to artificially force carrier on.
+The
+.BI /dev/cu XN
+devices should be referenced in
+.I /usr/lib/uucp/Devices
+for dialout operation.
+.SH "TTY HANGUP BEHAVIOR"
+When tty carrier drops,
+or when a tty device becomes unavailable due to a hardware
+or configuration change,
+all associated open tty devices exhibit hangup behavior.
+.PP
+In this driver, that means
+a
+.B HANGUP
+signal is sent to all processes attached to the device,
+and all subsequent
+.IR open ,
+.IR read ,
+.IR write
+and
+.IR ioctl
+operations fail until the device is closed.
+.PP
+This differs from some CLIST drivers who fail
+.IR read / write / ioctl
+operations while carrier is low,
+but allow them when carrier is restored.
+However the behavior is fully compatible with all STREAMS based
+drivers where a HANGUP persists until the final close.
+.SH "PORT SHARING BEHAVIOR"
+Unlike conventional local tty devices,
+Realport devices are shared between the local
+host, the remote unit, and possibly other hosts on the network.
+When a port is in other use, it's said to be busy.
+Of course a device can also be busy when its opposite
+dialin/dialout device is open.
+.PP
+A blocking open to a busy device waits until the device
+becomes available, as though waiting for carrier.
+A non-blocking open fails.
+.SH "DAEMON OPERATION"
+If an attempt is made to open a tty device before the daemon
+establishes communication with the remote unit,
+or when communication is interrupted,
+the open waits as though waiting for carrier.
+.PP
+Once communication is established with the RealPort-enabled device,
+a brief wait is still required before any tty device can
+complete an open.
+During this time the daemon sends an open request to the
+unit, and waits for a response.
+.PP
+If the network device is temporarily unreachable,
+even a non-blocking
+open may block for
+several minutes until either communication is successful or the TCP/IP
+connection is dropped.
+During this time an interrupt such as an
+.I alarm
+is effective in terminating the wait.
+.PP
+The System Administrator may choose to configure more ports with
+.BR dgrp_cfg_node (8)
+than physically exist on the assigned network device,
+possibly with a thought to future expansion.
+A blocking open to the extra ports waits for the ports
+to appear (maybe years later) while a non-blocking open
+fails with a no-such-device error.
+.PP
+Its possible that the TCP/IP connection
+to a device may drop and be recovered some time later.
+An open port is unresponsive during the period,
+and while some in-flight and buffered data may be lost,
+port settings are always recovered.
+In most cases active sessions can continue without serious
+disruption.
+There is one exception;
+the remote unit may reassign a port to another use during the disruption
+so it is busy when communication is restored;
+the tty then exhibits hangup behavior.
+.PP
+If a RealPort-enabled device is power cycled or swapped while a port is open,
+most applications won't notice the disruption.
+For example its possible replace a Portserver I
+with a Portserver II
+while active sessions are in progress.
+A hard-wired terminal user in the middle of an edit session would
+notice his terminal unresponsive for a time;
+but he would be able to continue editing when the
+swap was complete.
+.PP
+Modems and other devices that monitor modem signals may not
+be so tolerant as the user in the example above.
+Properly configured modems disconnect when DTR drops.
+.PP
+If the number of ports changes during operation,
+any additional ports which appear become immediately operative,
+while any ports which vanish become inoperative.
+Hence its possible to configure
+.BR getty (1m)
+logins on nonexistent ports or even nonexistent network devices.
+The getty processes then wait quietly for the purchasing department.
+When hardware
+appears they spawn logins.
+When hardware vanishes they respawn and go back to their silent vigil.
+.PP
+Some applications change
+.BR termio (7)
+settings very frequently.
+Rather than confirm each such change with the unit in real
+time,
+the daemon sends the change to the unit
+and then returns immediately.
+This practice seldom has any effect on standard applications,
+but can cause problems with some applications (particularly
+test programs) which make assumptions about how quickly 
+changes in terminal settings take effect.
+.PP
+When a RealPort daemon is killed,
+all ports on that unit exhibit hangup behavior,
+and are unavailable until the daemon is respawned and
+RealPort communication is restored.
+.SH "TRANSPARENT PRINT"
+The transparent print devices are designed so that a terminal
+user may continue working while data is sent to the printer
+port of his terminal.  To do this the driver:
+.PP
+(1) Gives priority to terminal data.  In practice this means
+that terminal data must be sent ahead of printer data whenever
+possible.
+.PP
+(2) Sends only small amounts of printer data at a time.
+Note that a few keystrokes of terminal data arriving after a large
+block of printer data must wait until the large block has been
+completely transmitted.
+.PP
+(3) Slows down printer data transmission
+so the printer need never exercise flow control.  Such
+flow control would also block data to the terminal.
+.PP
+(4) Models the printer's internal input buffer
+so the print buffer can be filled while the terminal is inactive
+and drained when it is busy.
+.PP
+Getting this to work in practice requires a few adjustable
+.BR ditty-rp (1)
+parameters:
+.TP 12
+.I maxcps
+The character-per-second data rate that the
+printer can sustain in typical use.
+If this number is set too low, printer speed is decreased.
+If its set too high, the printer will activate flow control.
+A value that is 50% to 80% of the printers rated CPS speed
+generally works well.
+Printers typically run full speed only on long lines of
+text;
+in practice there are carriage controls,
+spacing, overprinting, font metrics and print quality modes
+that limit the effective speed.
+.TP
+.I maxchar
+The maximum number of printer data characters that may be placed
+in any local or remote buffer ahead of terminal data.
+To limit the delay to a maximum of 50 milliseconds,
+a value should be chosen that is no more than 1/200 of the baud rate.
+For example 9600/200 is 48 characters, and it takes 50 milliseconds
+to send 48 characters at 9600 baud.
+.TP
+.I bufsize
+The size of the printer serial buffer used by the printer
+speed model.
+If this value is set to 800 characters, the driver will send
+up to 800 characters to the printer at high speed before throttling
+back to the
+.I maxcps
+rate above.
+Setting this parameter too low limits throughput slightly.
+Setting it too high causes the printer to activate flow
+control at the start of a printout.
+.PP
+Generally if the printer activates flow control at the start
+of a printout,
+.I bufsize
+is too large.
+Otherwise if it activates flow control during a printout,
+.I maxcps
+is too large.
+If the printer is not activating flow control,
+but terminal delays are experienced,
+.I maxchar
+is too large.
+.SH "TERMIO COMPATIBILITY"
+In most cases, Realport devices appear identical to local tty
+devices.  However there are some exceptions.
+.PP
+The
+.I HUPCL
+flag is ignored.
+The behavior of DTR after a close is defined by the 
+tty device type.  See the Portserver (or similar) manual for details.
+.PP
+For reasons of efficiency, the transmission of commands and data
+to the remote unit is asynchronous and the time to (for example)
+communicate a baud rate change is not tightly bound.
+Such delays can introduce race conditions in applications
+(primarily Posix test suites)
+which rapidly change tty settings.
+.PP
+All terminal delays except for
+.I TAB3
+are ignored.
+These delays are not supported directly by the RealPort-enabled devices,
+and across a network with unpredictable delays its not practical
+to support them directly in the host computer.
+Many modern UNIX systems, such as HP-UX, appear to
+ignore them even with vendor provided hardware.
+As a practical matter, the mechanical terminals for which these
+delays were designed have not been manufactured in many years,
+and appear to survive primarily in dusty basements.
+.SH "SEE ALSO"
+.BR ditty-rp (1),
+.BR drpd (8),
+.BR dgrp_cfg_node (8),
+.BR dgrp_gui (8)
+

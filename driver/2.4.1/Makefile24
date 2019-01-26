@@ -1,0 +1,148 @@
+#
+# Copyright 1999 by Digi International (www.digi.com)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the 
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+# PURPOSE.  See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#	Main Makefile for PCI DataFire RAS/AccelePort RAS/AccelePort 2000 driver
+#	for Linux
+#
+#	$Id: Makefile24,v 1.3 2014/03/27 21:26:52 pberger Exp $
+#
+datarootdir = @datarootdir@
+include ../../Makefile.inc
+
+
+# Compiler and flags to use when compiling the driver itself.
+CC = @KGCC@
+KCFLAGS = @KCFLAGS@
+KINC = @KINC@
+MODDIR = $(shell echo $(RPM_BUILD_ROOT)@MODDIR@/misc)
+LSMOD = @LSMOD@
+RMMOD = @RMMOD@ 
+INSMOD = @INSMOD@
+SMP = @SMP@
+NEW_TTY_LOCKING = @NEW_TTY_LOCKING@
+MANDIR=@mandir@
+
+VPATH=.:./include
+ARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
+POSXDIR= $(shell if [ -f /usr/include/bits/posix_opt.h ]; then echo bits; else echo; fi)
+GCCDIR=$(shell $(CC) --print-libgcc | xargs dirname)
+
+
+KCFLAGS := $(KCFLAGS) -D__KERNEL__ -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer $(KINC)
+VERFILE=@KERNEL_HEADERS@/include/linux/modversions.h
+MODVERSIONS=$(shell [ -f $(VERFILE) ] && echo -DMODVERSIONS -include $(VERFILE) )
+
+
+KCFLAGS := $(KCFLAGS) \
+	-I. \
+	-Iinclude \
+	-I../../commoninc \
+	-DMODULE\
+	$(MODVERSIONS)
+
+CFLAGS= $(KCFLAGS)
+
+ifeq ($(SMP),SMP)
+        KCFLAGS += -D__SMP__
+endif
+
+ifeq ($(NEW_TTY_LOCKING),Yes)
+	KCFLAGS += -DNEW_TTY_LOCKING
+endif
+
+
+MODULE=	dgrp.o
+
+
+CFLAGS += -DSBINDIR=\"$(SBINDIR)\" -DDGRP_TRACER -DLINUX #-DDEBUG
+CFLAGS += -DDIGI_VERSION=\"$(TRUE_VERSION)\" -D@DISTRO@
+
+ifeq ($(POSXDIR),bits)
+	CFLAGS += -DPOSXDIR
+endif
+
+
+all: $(MODULE)
+	echo "complete."
+
+#
+#	Link all the driver objects into one .o
+#
+
+dgrp.o: dgrp_common.o dgrp_dpa_ops.o dgrp_driver.o dgrp_proc.o dgrp_specproc.o dgrp_net_ops.o dgrp_mon_ops.o dgrp_tty.o dgrp_ports_ops.o dgrp_sysfs.o
+
+ifeq ($(ARCH),sparc64)
+	$(LD) -r -m elf64_sparc -o $@ dgrp_common.o dgrp_dpa_ops.o dgrp_driver.o dgrp_proc.o dgrp_specproc.o dgrp_net_ops.o dgrp_mon_ops.o dgrp_tty.o dgrp_ports_ops.o dgrp_sysfs.o
+else
+	$(LD) -r -nostartfiles -o $@ dgrp_common.o dgrp_dpa_ops.o dgrp_driver.o dgrp_proc.o dgrp_specproc.o dgrp_net_ops.o dgrp_mon_ops.o dgrp_tty.o dgrp_ports_ops.o dgrp_sysfs.o -L$(GCCDIR) -lgcc
+endif
+
+dgrp_common.o: dgrp_common.h
+
+dgrp_driver.o: dgrp_proc.h
+
+dgrp_mon_ops.o: dgrp_mon_ops.h drp.h
+
+dgrp_dpa_ops.o: dgrp_dpa_ops.h drp.h
+
+dgrp_net_ops.o: dgrp_net_ops.h drp.h
+
+dgrp_ports_ops.o: dgrp_ports_ops.h drp.h
+
+dgrp_specproc.o: dgrp_specproc.h
+
+dgrp_tty.o: dgrp_tty.h
+
+dgrp_sysfs.o: dgrp_sysfs.h
+
+
+install: 
+	install -m 0755 -d $(MODDIR)
+	install -m 0644 $(MODULE) $(MODDIR)
+	install -d $(RPM_BUILD_ROOT)$(MANDIR)/man8
+	install -m 644 dgrp.man $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp.8
+
+
+uninstall:
+	-rm -f $(MODDIR)/$(MODULE)
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp.8*
+
+
+clean:
+	-rm -f *.o depend.mk
+
+
+TAGS: FORCE
+	find . \
+		\( -name \*.c -o -name \*.cc -o -name \*.h -o -name \*.hh \) \
+		-print | etags -
+
+
+FORCE:
+
+
+depend.mk:
+	for i in *.[cS] ;\
+	do \
+		$(CC) -MM $(CFLAGS)  $$i ;\
+	done > depend.mk
+
+
+include depend.mk
+
+
+.PHONY: all install uninstall postinstall preuninstall

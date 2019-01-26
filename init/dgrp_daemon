@@ -1,0 +1,154 @@
+#!/bin/sh
+#
+# chkconfig: 345 92 34
+# description: Starts and stops the "dgrp" daemons based on \
+#              the PortServer backing store file.
+#
+### BEGIN INIT INFO
+# Provides:		dgrp
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	3 5
+# Default-Stop:		0 1 2 6
+# Short-Description:	dgrp_daemon
+# Description:		Start dgrp_daemon
+### END INIT INFO
+
+# Source networking configuration.
+# Suse 8.1 seems to make this a directory for some reason...
+# So we just won't run this command on Suse 8.1
+if [ ! -d /etc/sysconfig/network -a -f /etc/sysconfig/network ]
+then
+    . /etc/sysconfig/network
+    # Check that networking is up.
+    [ "${NETWORKING}" = "no" ] && exit 0
+fi
+
+# Source dgrp file and dir locations
+[ -f /usr/bin/dgrp/config/file_locations ] || exit 0
+. /usr/bin/dgrp/config/file_locations
+
+# Check that the backing store file exists.
+[ -f ${DGRP_STORE} ] || exit 0
+
+RETVAL=0
+
+# See how we were called.
+case "$1" in
+  start)
+	echo "Starting DGRP daemons: "
+
+	if [ -f ${DGRP_STORE}.tmp ]
+	then
+		rm -rf ${DGRP_STORE}.tmp
+	fi
+	cp ${DGRP_STORE} ${DGRP_STORE}.tmp
+
+	while read id ip pcnt speed ipport mode owner grp encrypt encrypt_ipport
+	do
+		firstchar=`expr "${id}#" : '\(.\).*'`
+		case $firstchar in
+		'#') continue;;
+		esac
+
+		if [ "$speed" = "auto" ] ; then
+			speed=""
+		else
+			speed="-s ${speed}"
+		fi
+
+		if [ "$ipport" = "default" ] ; then
+			ipport=""
+		else
+			ipport="-p ${ipport}"
+		fi
+
+		if [ "$encrypt" = "default" ] ; then
+			encrypt="-e never"
+		else
+			encrypt="-e ${encrypt}"
+		fi
+
+		if [ "$encrypt_ipport" = "default" ] ; then
+			encrypt_ipport=""
+		else
+			encrypt_ipport="-q ${encrypt_ipport}"
+		fi
+
+		if [ "$mode" = "default" ] ; then
+			mode=""
+		else
+			mode="-m ${mode}"
+		fi
+
+		if [ "$owner" = "default" ] ; then
+			owner=""
+		else
+			owner="-o ${owner}"
+		fi
+
+		if [ "$grp" = "default" ] ; then
+			grp=""
+		else
+			grp="-g ${grp}"
+		fi
+
+		echo -n "	Daemon for id \"${id}\" (${ip}): "
+		${DGRP_CFG} ${encrypt} ${encrypt_ipport} ${speed} ${ipport} \
+		            ${grp} ${owner} ${mode} \
+		            init ${id} ${ip} ${pcnt}
+		RETVAL=$?
+		if [ $RETVAL -ne 0 ] ;then
+			echo
+			break
+		fi
+
+		echo "started."
+
+	done < ${DGRP_STORE}.tmp
+	rm -rf ${DGRP_STORE}.tmp
+	;;
+  stop)
+	echo "Stopping DGRP daemons: "
+	while read id ip pcnt speed ipport mode owner grp
+	do
+		firstchar=`expr "${id}#" : '\(.\).*'`
+		case $firstchar in
+		'#') continue;;
+		esac
+
+		echo -n "	Daemon for id \"${id}\" (${ip}): "
+		${DGRP_CFG} stop ${id}
+		rctmp=$?
+		if [ $rctmp -ne 0 ] ;then
+			RETVAL=$rctmp
+			echo "couldn't stop."
+			continue
+		fi
+
+		echo "stopped."
+	done < ${DGRP_STORE}
+	;;
+  restart|reload)
+	$0 stop
+	$0 start
+	RETVAL=$?
+	;;
+  status)
+	if [ -e /proc ] ; then
+		if [ -f ${DGRP_PROCCONFIG} ] ; then
+			cat ${DGRP_PROCCONFIG}
+		else
+			echo "Digi RealPort driver not loaded."
+		fi
+	else
+		echo "/proc filesystem unavailable"
+	fi
+	RETVAL=0
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|reload|status}"
+	RETVAL=1
+esac
+
+exit $RETVAL

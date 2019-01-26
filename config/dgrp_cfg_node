@@ -1,0 +1,1037 @@
+#!/bin/sh
+#
+# Copyright 1999 by Digi International (www.digi.com)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the 
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+# PURPOSE.  See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+#======================================================================
+#
+# For the purposes of this script, a "PortServer" refers to any
+# RealPort enabled Digi product.
+#
+#======================================================================
+#======================================================================
+#
+# This script allows a set of operations to be applied to a PortServer:
+# init, start, stop, uninit
+#
+# The steps for "init":
+#
+#   1. Attempt to register the device information in our "backing store"
+#   2. If not, fail.
+#   3. Is the driver loaded?
+#   4. If not, attempt an insmod of the driver.
+#   5. If the driver is still not loaded, fail.
+#   5a.Once we are sure driver is loaded, be sure to arrange for
+#      alt_fail_open if it has been requested (see 5a for details)
+#   6. Is the PortServer registered in the "proc" configuration files?
+#   7. If not, attempt to add the node.
+#   8. If the node is still not registered, fail.
+#   9. Call the device creation tool against this node.
+#   10. If failures are reported, complain, but don't fail.
+#   11. Proceed with the "start" operation.
+#
+# The steps for "start":
+#
+#   1. Is a daemon already running against this node?
+#   2. If so, succeed.
+#   3. Is the driver loaded?
+#   4. If not, fail.
+#   5. Is the node registered in the "proc" config. files?
+#   6. If not, fail.
+#   7. Start a daemon for this node.
+#   8. If a problem, fail.
+#
+# The steps for "stop":
+#
+#   1. Is a daemon running against this node?
+#   2. If not, succeed.
+#   2.5 Fail if any of the nodes are being accessed
+#   3. Attempt to kill the daemon.
+#   4. If can't, fail.
+#
+# The steps for "uninit":
+#
+#   1. Attempt a "stop" operation.
+#   2. Test to see if the node is in "proc". (if not, succeed)
+#   2.5 Fail if any of the nodes are being accessed.
+#   3. Attempt to unregister the node in "proc".
+#   4. If still in "proc", fail.
+#   5. Attempt to remove the device information from our "backing store"
+#   6. If not, fail.
+#   7. If the "backing store" is now empty, delete the backing store.
+#   8. If failure, continue.
+#   9. Attempt to remove the special files associated with the now
+#      obsolete PortServer ID
+#   10. If failure, continue.
+#   
+#======================================================================
+
+#----------------------------------------------------------------------
+#
+#  global constants
+#
+#----------------------------------------------------------------------
+
+MAXCHAN=64
+
+DGRP_DRIVER="dgrp"
+DGRP_PROC="/proc/dgrp"
+DGRP_PROCCONFIG="/proc/dgrp/config"
+DGRP_PROCINFO="/proc/dgrp/info"
+DGRP_PROCNET="/proc/dgrp/net"
+#DGRP_PROCPORTS="/proc/dgrp/ports"
+DGRP_NODEINFO="/proc/dgrp/nodeinfo"
+
+DGRP_STORE="/etc/dgrp.backing.store"    # Remember what is configured
+
+TMPFILE="/tmp/tmp.$$"
+
+TTY_PREFIX="/dev/tty"
+CU_PREFIX="/dev/cu"
+PR_PREFIX="/dev/pr"
+
+# Ensure that we can see insmod/rmmod/lsmod/init commands.
+PATH=$PATH:/sbin:/usr/sbin:/usr/bin/dgrp/config
+export PATH
+
+#
+# These macros are defined for the commands used by this procedure
+#
+# An assumption is made that "echo", "exit" and "cat" are in the path
+# or are shell built-in functions.
+#
+echo "" > ${TMPFILE}
+
+getcmd() {
+	cmd="$1"
+
+	res=`which ${cmd} 2>&1`
+
+	if [ $? -ne 0 ]
+	then
+		echo "Error: $res" >&2
+		echo "Couldn't find command \"${cmd}\" in path." >&2
+		echo "missing" > ${TMPFILE}
+		exit 1
+	fi
+
+	res=`echo ${res} | cut -f1 -d' '`
+
+	echo ${res}
+}
+
+#
+#  test the permissions on the specified file
+#
+#  parameters:  $1 = filename
+#		$2 = f r w x (default x)
+#
+test_perms() {
+	filename="$1"
+	testbit="$2"
+
+	if [ "X$testbit" = "X" ]
+	then
+		echo "dgrp_cfg_node:  internal error:  test_perms \c"
+		echo "called with no filename"
+		return
+	fi
+
+	if [ "X$testbit" = "X" ]
+	then 
+		testbit="x"
+	fi
+
+	if [ ! -${testbit} ${filename} ]
+	then
+	   echo "You must be \"root\" to use this program"
+	   case "$testbit" in
+	   [xrw]) 	
+		echo "You do not have $2 permission for $1";;
+	   f)
+		echo "Regular file $1 does not exist.";;
+	   esac
+	   exit 1
+	fi
+
+}
+
+DGRP_DAEMON=/usr/bin/dgrp/daemon/drpd
+DGRP_MK_SPECS=/usr/bin/dgrp/config/dgrp_mk_specs
+DGRP_ALTFAILOPEN=/usr/bin/dgrp/config/alt_fail_open
+
+test_perms $DGRP_DAEMON f
+test_perms $DGRP_DAEMON x
+test_perms $DGRP_MK_SPECS f
+test_perms $DGRP_MK_SPECS x
+
+   AWK=`getcmd awk`
+    CP=`getcmd cp`
+ FUSER=`getcmd fuser`
+  GREP=`getcmd grep`
+  EGREP=`getcmd egrep`
+INSMOD=`getcmd insmod`
+  KILL=`getcmd kill`
+ LSMOD=`getcmd lsmod`
+    PS=`getcmd ps`
+    RM=`getcmd rm`
+ RMMOD=`getcmd rmmod`
+  SORT=`getcmd sort`
+
+test_perms $FUSER x
+test_perms $LSMOD x
+test_perms $INSMOD x
+test_perms $RMMOD x
+
+#----------------------------------------------------------------------
+#
+#  usage
+#
+#----------------------------------------------------------------------
+
+usage() {
+	cat <<EOF
+
+USAGE:  $0 [ options ] <operation> <ID> <IP> <port_count>
+
+       operation  - One of "init", "start", "stop" or "uninit"
+       ID         - device ID
+       IP         - IP name or address of the node (only required
+                    for the "init" and "start" operations)
+       port_count - Number of ports to create for this device
+                    (only required for the "init" operation)
+
+       options:
+
+           -v                 Verbose
+           -s <speedstr>      Set the link speed string.  The string is 1-5
+                              comma separated integers, with no whitespace.
+           -p <portnum>       RealPort port number (if not default)
+           -e <always/never>  Enable/Disable RealPort with Encryption.
+           -q <portnum>       Encrypted RealPort port number (if not default)
+           -m <mode>          Set the default file protection mode
+           -o <owner>         Set the default user ID of the file owner
+                              Value must be an integer.
+           -g <group>         Set the default group ID of the file owner
+                              Value must be an integer.
+
+EOF
+	exit 1
+}
+
+
+#----------------------------------------------------------------------
+#
+#  handle_start
+#
+#----------------------------------------------------------------------
+
+handle_start() {
+	#
+	#  1. Is a daemon already running against this node?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for a daemon for ${id}"
+	fi
+
+	tmp=`${PS} ax | ${GREP} "drpd ${id}" | ${GREP} -v grep 2>&1`
+
+	#
+	#  2. If so, succeed
+	#
+
+	if [ "X$tmp" != "X" ]
+	then
+		return
+	fi
+
+	#
+	#  3. Is the driver loaded?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for a loaded module"
+	fi
+
+	if [ ! -d ${DGRP_PROC} ]
+	then
+		#
+		#  4. If not, fail
+		#
+
+		echo "ERROR: module dgrp not loaded." >&2
+		exit 1
+	fi
+
+	#
+	#  5. Is this ID registered in "proc"?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for a ${id} in /proc"
+	fi
+
+	if [ \! -e ${DGRP_PROCNET}/${id} ]
+	then
+		#
+		#  6. If not, fail
+		#
+
+		echo "ERROR: node ${id} has not been registered" >&2
+		exit 1
+	fi
+
+	#
+	#  7. Start a daemon for this node.
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: attempting to start a daemon for ${id}"
+	fi
+
+	${DGRP_DAEMON} ${node_ipport} ${id} ${ipaddr} ${node_encrypt} ${node_ip_encrypt_port} ${node_speedstr}
+	rc=$?
+
+	#
+	#  8. If failure, complain and fail.
+	#
+
+	if [ $rc -ne 0 ]
+	then
+		echo "ERROR: failure ($rc) starting the daemon." >&2
+		exit 1
+	fi
+}
+
+
+#----------------------------------------------------------------------
+#
+#  handle_init
+#
+#----------------------------------------------------------------------
+
+compose_outline() {
+	outline="${id}	${ipaddr}	${port_count}"
+
+	if [ "x${node_speedstr}" = "x" ]
+	then
+		outline="${outline}	auto"
+	else
+		outline="${outline}	${raw_node_speedstr}"
+	fi
+
+	if [ "x${node_ipport}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_node_ipport}"
+	fi
+
+	if [ "x${default_mode}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_default_mode}"
+	fi
+
+	if [ "x${default_owner}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_default_owner}"
+	fi
+
+	if [ "x${default_group}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_default_group}"
+	fi
+
+	if [ "x${node_encrypt}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_node_encrypt}"
+	fi
+
+	if [ "x${node_ip_encrypt_port}" = "x" ]
+	then
+		outline="${outline}	default"
+	else
+		outline="${outline}	${raw_node_ip_encrypt_port}"
+	fi
+
+	echo ${outline}
+}
+
+#----------------------------------------------------------------------
+#
+#  handle_init
+#
+#----------------------------------------------------------------------
+
+handle_init() {
+	#
+	#  1. Attempt to register the node information in the backing store
+	#
+	rc=0
+
+	outline=`compose_outline`
+
+	test_perms "/etc/" w 
+	if [ \! -e ${DGRP_STORE} ]
+	then
+		echo "#dummy" > ${DGRP_STORE}
+	fi
+
+	# remove the header and any existing version for this id
+
+	cat ${DGRP_STORE} | ${GREP} -v '^[^a-zA-Z0-9_]' | ${GREP} -v '^$' | \
+	        ${GREP} -v "^${id}" > ${TMPFILE}
+
+	# compose new version of the file
+
+	echo "${outline}" >> ${TMPFILE}
+
+	${SORT} -o ${TMPFILE} ${TMPFILE}
+
+	cat <<EOF > ${DGRP_STORE}
+#
+# Format:
+#
+#   ID  IP  PortCount  SpeedString  IPPort Mode Owner Group Encrypt EncryptPort
+#
+# If any of the last seven options should use the default, the
+# string "default" appears instead.
+#
+
+EOF
+	cat ${TMPFILE} >> ${DGRP_STORE}
+
+	${RM} -f ${TMPFILE}
+
+	#
+	#  2. If not, fail.
+	#
+	if [ $rc -ne 0 ]
+	then
+		echo "ERROR: registering node information in the static "\
+		            "registry." >&2
+		exit 1
+	fi
+
+	#
+	#  3. Is the driver loaded?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for a loaded module"
+	fi
+
+	if [ ! -d ${DGRP_PROC} ]
+	then
+
+		#
+		#  4. If not, attempt an insmod of the driver.
+		#
+
+                osrel=`uname -r`
+                if [ -f /lib/modules/$osrel/misc/${DGRP_DRIVER}.ko ]
+                then
+                        ${INSMOD} /lib/modules/$osrel/misc/${DGRP_DRIVER}.ko
+                else
+                        ${INSMOD} /lib/modules/$osrel/misc/${DGRP_DRIVER}.o
+                fi
+
+		#
+		#  5. If still not loaded, fail
+		#
+
+		if [ $verbosity -ge 2 ]
+		then
+			echo "$0: double checking the load"
+		fi
+
+		if [ ! -d ${DGRP_PROC} ]
+		then
+			echo "ERROR: couldn't load driver (err: $rc)." >&2
+			exit 1
+		fi
+	fi
+
+	#
+	#  5a. Once we are sure that the driver is loaded, be sure to
+	#      arrange for alt_fail_open if it has been requested
+	#
+	#  Some Linux kernels (for instance, the stock RedHat 7.1 kernel)
+	#  have a patch in the serial driver subsystem which changes the
+	#  expected behavior of device drivers when an open of a device
+	#  fails.  This "alternate behavior for failed opens" will be
+	#  enabled by this script if the following file is placed in the
+	#  file system:
+	#
+	#    ${DGRP_ALTFAILOPEN}
+	#
+	#  The driver ignores this request for kernels older than the 2.4
+	#  series.
+	#
+	[ -f ${DGRP_ALTFAILOPEN} ] && \
+		echo "alt_fail_open=1" > ${DGRP_PROCINFO}
+
+	#
+	#  6. Is this ID registered in "proc"?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for ${id} in /proc"
+	fi
+
+	if [ \! -e ${DGRP_PROCNET}/${id} ]
+	then
+		#
+		#  7. If not, attempt to add it.
+		#
+
+		test_perms $DGRP_PROCCONFIG w 
+		echo "+ ${id}" > ${DGRP_PROCCONFIG}
+
+		#
+		#  8. If the node still isn't registered, fail.
+		#
+
+		if [ $verbosity -ge 2 ]
+		then
+			echo "$0: double checking the addition of ${id}"
+		fi
+
+		if [ \! -e ${DGRP_PROCNET}/${id} ]
+		then
+			echo "ERROR: couldn't register node ${id}." >&2
+			exit 1
+		fi
+	fi
+
+	#
+	#  9. Call the device creation tool against this node.
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: making the special devices for ${id}"
+	fi
+
+	major=`cat ${DGRP_PROCCONFIG} | ${GREP} "^[ \t]*${id}[ \t]" | \
+	       ${AWK} '{ print $2 }'`
+
+	${DGRP_MK_SPECS} ${default_mode} ${default_owner} \
+	                 ${default_group} ${id} ${major} \
+	                 ${port_count}
+	rc=$?
+
+	#
+	#  10. If failures are reported, complain, but don't quit
+	#
+
+	if [ $rc -ne 0 ]
+	then
+		echo "ERROR: couldn't register all of the device " \
+		     "files.  Continuing anyway." >&2
+	fi
+
+	#
+	#  11a. Continue with the "stop" operation.
+	#  This is a "just in case", something might have changed,  
+	#  so go and stop the daemon.
+	#
+
+	handle_stop
+
+	#
+	#  11b. Continue with the "start" operation.
+	#
+
+	handle_start
+}
+
+
+#----------------------------------------------------------------------
+#
+#  handle_stop
+#
+#----------------------------------------------------------------------
+
+handle_stop() {
+	#
+	#  1. Is a daemon running against this node?
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for a daemon for ${id}"
+	fi
+
+	tmp=`${PS} ax | ${GREP} "drpd ${id}" | ${GREP} -v grep 2>&1`
+	pid=`echo $tmp | ${AWK} '{ print $1 }'`
+
+	#
+	#  2. If not, succeed
+	#
+
+	if [ "X$pid" = "X" ]
+	then
+		return
+	fi
+
+	#
+	#  3. Attempt to kill the daemon
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: attempting to kill ${id}'s daemon (pid $pid)"
+	fi
+
+	${KILL} -9 $pid
+
+	if [ $? -ne 0 ]
+	then
+		#
+		#  4. If can't, fail
+		#
+
+		echo "ERROR: can't kill daemon." >&2
+		exit 1
+	fi
+}
+
+check_idle_fuser() {
+	FROM=$1
+	${FUSER} ${TTY_PREFIX}${id}[0-9][0-9] ${PR_PREFIX}${id}[0-9][0-9]
+	if [ $? -eq 0 ]
+	then
+		if [ $verbosity -ge 1 ]
+		then
+			echo "$0: some ${id} nodes are being accessed (fuser, ${FROM})"
+		fi
+		echo "ERROR: couldn't unregister node ${id} (err: fuser, ${FROM})" >&2
+		exit 1
+	fi
+}
+
+# Check for a "00" open_count field in /proc/dgrp/nodeinfo
+check_idle_nodeinfo() {
+	FROM=$1
+	NODE_STATUS=`${EGREP} "^  ${id}" ${DGRP_NODEINFO}`
+	IDLE=`echo ${NODE_STATUS} | ${EGREP} "00$"`
+	rc=$?
+
+	if [ ${rc} -ne 0 ]
+	then
+
+		if [ $verbosity -ge 1 ]
+		then
+			echo "$0: ${NODE_STATUS}"
+			echo "$0: some nodes are being accessed (nodeinfo, ${FROM})"
+		fi
+		echo "ERROR: couldn't unregister node ${id} (err: nodeinfo, "\
+				"${FROM})" >&2
+		exit 1
+	fi
+}
+
+# Jira RP48 (January 14, 2015):
+# The canonical "fuser" check looks for open ports, but misses ports
+# that are in the early stages of an as-yet-incomplete open.  The new
+# "nodeinfo" test notices all opens including those in the earliest stages.
+check_idle() {
+	FROM=$1
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing if any ${id} nodes are being accessed"
+	fi
+	check_idle_fuser ${FROM}
+	check_idle_nodeinfo ${FROM}
+}
+
+#----------------------------------------------------------------------
+#
+#  handle_uninit
+#
+#----------------------------------------------------------------------
+
+handle_uninit() {
+	#
+	#  1. Attempt a stop operation
+	#
+
+	check_idle "check_handle_uninit 1"
+	handle_stop
+
+	#
+	#  2. Test to see if the node is in "proc". (if not, succeed)
+	#
+
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: testing for ${id} in /proc"
+	fi
+
+	if [ -e ${DGRP_PROCNET}/${id} ]
+	then
+		#
+		#  If the port is currently registered with a driver,
+		#  attempt to unregister it.
+		#
+
+		#
+		#   2.5 Fail if any of the nodes are being accessed.
+		#
+
+		check_idle "check_handle_uninit 2"
+
+		#
+		#  3. Attempt to unregister the node in "proc".
+		#
+
+		if [ $verbosity -ge 2 ]
+		then
+			echo "$0: attempting to unregister ${id} in /proc"
+		fi
+
+		test_perms $DGRP_PROCCONFIG r 
+		major=`cat ${DGRP_PROCCONFIG} | ${GREP} "^[ 	]*${id}[ \t]" | \
+		       ${AWK} '{ print $2 }'`
+
+		#
+		#  3.5. If the major number could not be determined, give up.
+		#       Otherwise, continue trying to unregister.
+		#
+
+		if [ "x${major}" = "x" ]
+		then
+			echo "ERROR: couldn't find major number for node ${id}" >&2
+			exit 1
+		fi
+
+		test_perms $DGRP_PROCCONFIG w 
+		cat <<EOF > ${DGRP_PROCCONFIG}
+- ${id} ${major}
+EOF
+		rc=$?
+
+		#
+		#  4. If fail, fail
+		#
+
+		if [ $rc -ne 0 ]
+		then
+			echo "ERROR: couldn't unregister node ${id} (err: $rc)" >&2
+			exit 1
+		fi
+
+	fi   #  test for ID in /proc/dgrp/config
+
+	#
+	#  5. Attempt to remove the node information from the backing store
+	#
+	rc=0
+
+	test_perms $DGRP_STORE w 
+	if [ -e ${DGRP_STORE} ]
+	then
+		# remove any existing version for this id
+
+		cat ${DGRP_STORE} | ${GREP} -v "^${id}" > ${TMPFILE}
+
+		${CP} ${TMPFILE} ${DGRP_STORE}
+
+		${RM} -f ${TMPFILE}
+	fi
+
+	#
+	#  6. If not, fail.
+	#
+	if [ $rc -ne 0 ]
+	then
+		echo "ERROR: removing node information from the static "\
+		            "registry." >&2
+		exit 1
+	fi
+
+	#
+	#   7. If the "backing store" is now empty, delete the backing store.
+	#   8. If failure, continue.
+	#
+	if [ -e ${DGRP_STORE} ]
+	then
+		# strip everything but the ID entries
+
+		contents=`cat ${DGRP_STORE} | \
+		              ${GREP} -v '^[^a-zA-Z0-9_]' | ${GREP} -v '^$'`
+
+		# if there is nothing left, remove the backing store entirely
+
+		if [ "x${contents}" = "x" ]
+		then
+			if [ $verbosity -ge 2 ]
+			then
+				echo "$0: attempting to remove empty backing store"
+			fi
+
+			${RM} -f ${DGRP_STORE}
+			if [ $? -ne 0 ]
+			then
+				echo "ERROR: removing empty backing store." >&2
+			fi
+		fi
+	fi
+
+	#
+	#   9. Attempt to remove the special files associated with the now
+	#      obsolete PortServer ID
+	#   10. If failure, continue.
+	#
+	if [ $verbosity -ge 2 ]
+	then
+		echo "$0: attempting to remove special devices for ${id}"
+	fi
+
+	${RM} -f ${TTY_PREFIX}${id}[0-9][0-9]
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: removing tty device files "\
+		            "(${TTY_PREFIX}${id}[0-9][0-9])." >&2
+	fi
+
+	${RM} -f ${CU_PREFIX}${id}[0-9][0-9]
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: removing cu device files "\
+		            "(${CU_PREFIX}${id}[0-9][0-9])." >&2
+	fi
+
+	${RM} -f ${PR_PREFIX}${id}[0-9][0-9]
+	if [ $? -ne 0 ]
+	then
+		echo "ERROR: removing pr device files "\
+		            "(${PR_PREFIX}${id}[0-9][0-9])." >&2
+	fi
+
+}
+
+
+#----------------------------------------------------------------------
+#
+#  parameter checking functions
+#
+#----------------------------------------------------------------------
+testid() {
+	id="$1"
+
+	if [ "x${id}" = "x" ]
+	then
+		echo "ERROR: ID parameter must be supplied" >&2
+		return 1
+	fi
+
+	tst=`expr "${id}" : '\([a-zA-Z0-9_][a-zA-Z0-9_]\?\).*'`
+
+	if [ "${id}" = "${tst}" ]
+	then
+		return 0
+	fi
+
+	echo "ERROR: invalid ID parameter was supplied (${id})" >&2
+	return 1
+}
+
+testipaddr() {
+	#
+	# For now, assume that IP address/name is correct.  The daemon will
+	# fail if the IP address or name is invalid
+	#
+	return 0
+}
+
+testcnt() {
+	cnt="$1"
+
+	if [ "x${cnt}" = "x" ]
+	then
+		return 0
+	fi
+
+	tst=`expr "${cnt}" : '\([0-9]\+\).*'`
+
+	if [ "${cnt}" = "${tst}" ]
+	then
+		return 0
+	fi
+
+	echo "ERROR: invalid count parameter was supplied (${cnt})" >&2
+	return 1
+}
+
+
+#----------------------------------------------------------------------
+#
+#  main
+#
+#----------------------------------------------------------------------
+
+verbosity=0
+node_speedstr=""
+node_ipport=""
+node_encrypt=""
+node_ip_encrypt_port=""
+default_mode=""
+default_owner=""
+default_group=""
+
+raw_node_speedstr=""
+raw_node_ipport=""
+raw_node_encrypt=""
+raw_node_ip_encrypt_port=""
+raw_default_mode=""
+raw_default_owner=""
+raw_default_group=""
+
+operation=""
+id=""
+ipaddr=""
+major=""
+port_count=""
+
+
+#
+# Check to see if any commands are missing.
+#
+if [ "`cat ${TMPFILE}`" = "missing" ]
+then
+	echo "Since some commands are missing, exiting..." >&2
+	${RM} -f ${TMPFILE}
+	exit
+fi
+
+#
+# Test the command line parameters.
+#
+set -- `getopt s:p:q:e:m:o:g:v $*`
+if [ $? != 0 ]
+then
+	usage
+fi
+
+for i in $*
+do
+	case $i in
+	-m)	default_mode="-m $2"  ; raw_default_mode="$2"; 
+			shift ; shift ;;
+	-o)	default_owner="-o $2" ; raw_default_owner="$2";
+			shift ; shift ;;
+	-g)	default_group="-g $2" ; raw_default_group="$2";
+			shift ; shift ;;
+	-s)	node_speedstr="$2" ; raw_node_speedstr="$2";
+			if [ "$node_speedstr" = "auto" ]
+			then
+				node_speedstr=""
+			fi
+			shift ; shift ;;
+	-p)	node_ipport="-p $2"   ; raw_node_ipport="$2";
+			shift ; shift ;;
+	-e)	node_encrypt="-e $2"   ; raw_node_encrypt="$2";
+			shift ; shift ;;
+	-q)	node_ip_encrypt_port="-q $2"   ; raw_node_ip_encrypt_port="$2";
+			shift ; shift ;;
+	-v)	verbosity=`expr $verbosity + 1` ; shift ;;
+	--)	shift ; break;;
+	esac
+done
+
+if [ $# -gt 4 ]
+then
+	usage
+fi
+
+operation=$1
+id=$2
+ipaddr=$3
+port_count=$4
+
+
+if [ $verbosity -ge 2 ]
+then
+	echo "$0: ${operation} requested for node ${id}"
+fi
+
+testid ${id}
+if [ $? -ne 0 ]
+then
+	usage
+fi
+
+testipaddr ${ipaddr}
+if [ $? -ne 0 ]
+then
+	usage
+fi
+
+testcnt ${port_count}
+if [ $? -ne 0 ]
+then
+	usage
+fi
+
+case $operation in
+init)
+	if [ "x${ipaddr}" = "x" ]
+	then
+		usage
+	fi
+	if [ "x${port_count}" = "x" ]
+	then
+		usage
+	fi
+	handle_init ;;
+start)
+	if [ "x${ipaddr}" = "x" ]
+	then
+		usage
+	fi
+	handle_start ;;
+stop)
+	handle_stop ;;
+uninit)
+	handle_uninit ;;
+*)
+	usage ;;
+esac
+
+if [ $verbosity -ge 1 ]
+then
+	echo "$0: operation completed (${operation} node ${id})"
+fi
+
+exit 0

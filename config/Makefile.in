@@ -1,0 +1,69 @@
+#
+#	dgrp_gui Makefile for Digi RealPort driver for Linux
+#
+datarootdir = @datarootdir@
+
+include ../Makefile.inc
+
+INC=
+CFLAGS = @CFLAGS@
+CC = @CC@
+MANDIR=@mandir@
+
+NULL=
+TCLTARGET= dgrp_gui
+
+# the order is important here, dgrp_main.tcl must be last
+TCLLIB=\
+	dgrp_msgs.tcl \
+	dgrp_misc.tcl \
+	dgrp_nodes.tcl \
+	dgrp_ttys.tcl \
+	dgrp_scriptlog.tcl \
+	dgrp_main.tcl \
+	$(NULL)
+
+ICONS=\
+	dgrp.gif \
+	$(NULL)
+
+CFGLIB=\
+	dgrp_cfg_node \
+	dgrp_mk_spec \
+	dgrp_mk_specs \
+	file_locations \
+	$(NULL)
+
+# all install clean clobber web::
+
+all:	dgrp_mk_spec $(TCLTARGET)
+
+dgrp_mk_spec: 
+	$(CC) ${CFLAGS} dgrp_mk_spec.c -o $@
+
+$(TCLTARGET) : $(TCLLIB)
+	echo "#!/bin/sh" > $(TCLTARGET)
+	echo "# Run wish from the user's PATH \\" >> $(TCLTARGET)
+	echo "exec wish -f \"\$$0\" \$${1+\"\$$@\"}" >> $(TCLTARGET)
+	cat $(TCLLIB) >> $(TCLTARGET)
+	chmod +x $(TCLTARGET)
+
+install:  
+	install -d $(DGRPCONFIG)
+	install -d $(RPM_BUILD_ROOT)$(MANDIR)/man8
+	install $(TCLTARGET) $(ICONS) $(DGRPCONFIG)
+	install $(CFGLIB) $(DGRPCONFIG)
+	install -m 644 dgrp_cfg_node.man $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp_cfg_node.8
+	install -m 644 dgrp_gui.man $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp_gui.8
+
+uninstall:  
+	-rm -rf $(DGRPCONFIG)
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp_gui.8*
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man8/dgrp_cfg_node.8*
+
+clean::
+	rm -f dgrp_mk_spec $(TCLTARGET)
+
+clobber:: clean
+
+.PHONY: $(TCLTARGET) clean clobber 

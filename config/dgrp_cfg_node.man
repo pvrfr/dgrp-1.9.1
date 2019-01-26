@@ -1,0 +1,72 @@
+. Copyright (c) 1998 Digi International, All Rights Reserved.
+.
+. $Id: dgrp_cfg_node.man,v 1.4 2003/08/06 19:57:23 scottk Exp $
+.
+.TH DGRP_CFG_NODE 8 "January 17, 2000"
+.SH NAME
+dgrp_cfg_node - Digi RealPort Configuration Script
+.SH SYNOPSIS
+.B /dgrp_cfg_node 
+< options > [ init | uninit | start | stop ] < ID > < IP > < port_count >
+.SH DESCRIPTION
+.B dgrp_cfg_node
+part of the RealPort driver package, this script will add
+and remove RealPort enabled products.  
+.SS OPTIONS
+.TP
+.I \-v
+Verbose
+.TP
+.I \-s <speedstr> 
+Set the link speed string.  The string is 1-5
+comma separated integers, with no whitespace.
+.TP
+.I \-p <portnum>  
+RealPort port number (if not default)
+.TP
+.I \-e <always/never>  
+RealPort with encryption flag (default is never)
+.TP
+.I \-q <portnum>  
+RealPort with encryption port number (if not default)
+.TP
+.I \-m <mode>     
+Set the default file protection mode
+.TP
+.I \-o <owner>    
+Set the default user ID of the file owner
+Value must be an integer.
+.TP
+.I \-g <group>    
+Set the default group ID of the file owner
+Value must be an integer.
+.SH EXAMPLES
+To add one PortServer with 16 ports and id aa:
+.RS
+.sp
+.nf
+.ne 1
+/usr/bin/dgrp_cfg_node -v -v init aa 199.1.1.999 16
+.fi
+.sp
+.RE
+and to remove this same PortServer:
+.RS
+.sp
+.nf
+.ne 1
+/usr/bin/dgrp_cfg_node -v -v uninit aa 199.1.1.999
+.fi
+.SH FILES
+/etc/dgrp.backing.store
+.br
+/proc/dgrp/config
+.br
+.SH HISTORY
+First released in January, 2000
+.SH "SEE ALSO"
+.BR ditty-rp (1),
+.BR drpd (8),
+.BR dgrp (8),
+.BR dgrp_gui (8)
+

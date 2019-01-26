@@ -1,0 +1,7 @@
+DGRP_STORE="/etc/dgrp.backing.store"
+
+DGRP_CFG="/usr/bin/dgrp/config/dgrp_cfg_node"
+
+DGRP_PROCCONFIG="/proc/dgrp/config"
+
+DGRP_DITTYCMDS="/usr/bin/dgrp/config/ditty.commands"

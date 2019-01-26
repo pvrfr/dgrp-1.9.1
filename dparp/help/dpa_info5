@@ -1,0 +1,77 @@
+
+The fields on the main screen have the following meanings:
+
+
+The following fields are used for the Device Information section.
+
+Device Description:  The name and version of firmware of the Device.
+                     This field may be empty if the Device is "Down".
+
+Unit IP Address:     The Device's IP address.
+
+Number of ports:     The number of ports the Device reports to have.
+
+Server Port number:  The network port number that the driver attempts
+                     to open on the remote Device.
+
+Encrypted Sessions:  If the Device supports it, this field will report
+                     whether SSL is being used on the connection.
+
+Wan Speed:           Reports the speed of the network link that was set
+                     up, if any.
+
+Device ID:           Reports the id that this unit is using under the
+                     Operating System.
+
+
+
+The following fields are used for the VPD Information section.
+
+
+Product Name:        The Device's product name.
+
+Manufacturer:        The manufacturer of the Device.
+                     Will always be Digi.
+
+Serial Number:       The serial number of the Device.
+
+Part Number:         The part number of the Device.
+
+FRU Number:          The FRU (Field Replaceable Unit) number of the Device.
+
+EC Number:           The EC (Engineering Change) number of the Device.
+
+
+NOTE: Not all products support VPD information.
+      In this case, the VPD fields will not appear.
+
+
+
+
+To get more information about one of the displayed ports, use the up 
+an down arrow keys to move the highlighted bar to the desired device,
+then press <Enter>.
+
+
+A general note about navigation within the tool:
+
+
+  NOTE:   If the arrow keys do not map correctly, the tool will 
+          display the following message:
+
+                        Invalid Key.
+
+  If this occurs, substitute the standard UNIX cursor movement keys for the
+  up and down arrows:  Down = J or j;  Up = K or k;  
+                       Left = H or h;  Right = L or l.
+
+
+The Redraw (^L) option causes the tool to redisplay the entire screen,
+particularly useful with "dirty" connections in which the display becomes
+corrupt.
+
+The Print Screen (^P) option invokes a screen dump  to  the  default  file
+/tmp/dpalog.   If  another  file and/or path is desired, simply invoke the
+tool with the -l option.
+
+        e.g.       dparp -l <logfile>

@@ -1,0 +1,48 @@
+
+The fields on the main screen have the following meanings:
+
+
+Device ID:   The Device's ID in the Operating System.
+
+IP Address:  The remote device's IP address.
+
+Ports:       The number of ports on the Device.
+
+Status:      The current state of the device in the OS.
+             Possible values are:
+
+        Down          Indicates the device at the configured IP
+                      address is either not responding, or has
+                      rejected the connection.
+
+        Available     Indicates that status information about
+                      the specific Device is available.
+
+
+To get more information about one of the displayed ports, use the up 
+an down arrow keys to move the highlighted bar to the desired device,
+then press <Enter>.
+
+
+A general note about navigation within the tool:
+
+
+  NOTE:   If the arrow keys do not map correctly, the tool will 
+          display the following message:
+
+                        Invalid Key.
+
+  If this occurs, substitute the standard UNIX cursor movement keys for the
+  up and down arrows:  Down = J or j;  Up = K or k;  
+                       Left = H or h;  Right = L or l.
+
+
+The Redraw (^L) option causes the tool to redisplay the entire screen,
+particularly useful with "dirty" connections in which the display becomes
+corrupt.
+
+The Print Screen (^P) option invokes a screen dump  to  the  default  file
+/tmp/dpalog.   If  another  file and/or path is desired, simply invoke the
+tool with the -l option.
+
+        e.g.       dparp -l <logfile>

@@ -1,0 +1,4 @@
+KERNEL=="tty_dgrp*", PROGRAM="/usr/bin/dgrp_udev %k", SYMLINK+="%c", TAG="systemd"
+KERNEL=="cu_dgrp*", PROGRAM="/usr/bin/dgrp_udev %k", SYMLINK+="%c", TAG="systemd"
+KERNEL=="pr_dgrp*", PROGRAM="/usr/bin/dgrp_udev %k", SYMLINK+="%c", TAG="systemd"
+

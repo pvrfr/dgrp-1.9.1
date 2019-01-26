@@ -1,0 +1,60 @@
+#
+# Makefile version = "$Id: Makefile.linux.in,v 1.3 2014/03/27 21:26:52 pberger Exp $"
+#
+datarootdir = @datarootdir@
+
+include ../Makefile.inc
+
+#
+# linux commands
+#
+
+# SHELL=		/bin/bash
+CC=		gcc
+OPT=		-O
+
+MANDIR=@mandir@
+
+#
+# DGIPServ compiler options
+#
+
+DEBUG=
+# DEBUG=-DDEBUG
+
+APP_OPTS= -DLinux ${DEBUG}
+
+#
+# Production targets
+#
+
+all:	dgipserv
+
+dgipserv:	dgipserv.c 
+	$(CC) ${APP_OPTS} -o dgipserv $(OPT) -I. dgipserv.c
+	: strip dgipserv
+
+#
+# Utility
+#
+
+install:
+	install -d -m 755 $(IPSERVBIN)
+	install -d -m 755 $(RPM_BUILD_ROOT)$(MANDIR)/man1/
+	install -m 700 dgipserv $(IPSERVBIN)/$(IPSERVNAME)
+	install -m 644 dgipserv.1 $(RPM_BUILD_ROOT)$(MANDIR)/man1/$(IPSERVNAME).1
+
+# TODO: check and make sure no other packages are 
+# using the ditty program
+uninstall:
+	-rm -f $(IPSERVBIN)/$(IPSERVNAME)
+	-rm -f $(RPM_BUILD_ROOT)$(MANDIR)/man1/$(IPSERVNAME).1*
+
+clean: 
+	rm -f *.o dgipserv
+
+clobber:	clean
+	rm -f Makefile.linux
+
+.PHONY: all kernel clean clobber install uninstall
+

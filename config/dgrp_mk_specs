@@ -1,0 +1,229 @@
+#!/bin/sh
+#
+# Copyright 1999 by Digi International (www.digi.com)
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED; without even the 
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+# PURPOSE.  See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+#======================================================================
+#
+# This script is a dumb wrapper for "dgrp_mk_spec", designed to
+# allow the mass creation of ports for a PortServer.  If the number
+# of ports supplied is smaller than the number of ports which currently
+# exist, those ports which should no longer exist will be deleted.
+#
+#======================================================================
+
+#----------------------------------------------------------------------
+#
+#  global constants
+#
+#----------------------------------------------------------------------
+
+MAXCHAN=64
+TTY_PREFIX="/dev/tty"
+CU_PREFIX="/dev/cu"
+PR_PREFIX="/dev/pr"
+
+DGRP_MK_SPEC="/usr/bin/dgrp/config/dgrp_mk_spec"
+if [ ! -x $DGRP_MK_SPEC ]
+then
+	echo "You do not have x permission for $DGRP_MK_SPEC"
+	exit 1
+fi
+
+# SYSFS/UDEV check.
+#
+# If SYSFS exists, and the driver is set up to
+# register its ttys through it, then we do not
+# need to create the devices here.
+#
+# SYSFS/UDEV will do it automatically.
+#
+# So check to see if the driver is going to register
+# its ttys with SYSFS or not, then check to make sure
+# the system is running a UDEV daemon or some sort.
+#
+if [ -f /sys/class/digi_realport/driver_settings/register_with_sysfs ]
+then
+	register_with_sysfs=`cat /sys/class/digi_realport/driver_settings/register_with_sysfs`
+	if [ $register_with_sysfs -eq 1 ]
+	then
+		pid=`ps -ef | grep udevd | grep -v grep | awk '{print $2}'`
+		# There could be many udevd daemons running,
+		# just grab the first pid, if any.
+		pid=`echo $pid | awk '{print $1}'`
+		if [ ! -z $pid ]
+		then
+			exit 0
+		fi
+	fi
+fi
+
+if [ -f /proc/dgrp/info ]
+then
+	register_with_sysfs=`cat /proc/dgrp/info | grep register_with_sysfs | awk '{print $2}'`
+	if [ $register_with_sysfs -eq 1 ]
+	then
+		pid=`ps -ef | grep udevd | grep -v grep | awk '{print $2}'`
+		# There could be many udevd daemons running,
+		# just grab the first pid, if any.
+		pid=`echo $pid | awk '{print $1}'`
+		if [ ! -z $pid ]
+		then
+			exit 0
+		fi
+	fi
+fi
+
+
+#----------------------------------------------------------------------
+#
+#  usage
+#
+#----------------------------------------------------------------------
+
+usage() {
+	cat <<EOF
+
+USAGE:  $0 [ options ] <ID> <major> <port_count>
+
+       ID         - device ID
+       major      - device's major number
+       port_count - Number of ports to create for this device
+
+       options:
+
+           -v            Verbose
+           -m <mode>     Set the default file protection mode
+           -o <owner>    Set the default user ID of the file owner
+                         Value must be an integer.
+           -g <group>    Set the default group ID of the file owner
+                         Value must be an integer.
+
+EOF
+	exit 1
+}
+
+#----------------------------------------------------------------------
+#
+#  zerofill
+#
+#----------------------------------------------------------------------
+
+zerofill() {
+	echo `expr "00$1" : '.*\(..\)$'`
+}
+
+
+#----------------------------------------------------------------------
+#
+#  main
+#
+#----------------------------------------------------------------------
+
+verbosity=0
+default_mode=""
+default_owner=""
+default_group=""
+
+id=""
+major=""
+port_count=""
+
+set -- `getopt m:o:g:v $*`
+if [ $? != 0 ]
+then
+	usage
+fi
+
+for i in $*
+do
+	case $i in
+	-m)	default_mode="-m $2"  ; shift ; shift ;;
+	-o)	default_owner="-o $2" ; shift ; shift ;;
+	-g)	default_group="-g $2" ; shift ; shift ;;
+	-v)	verbosity=`expr $verbosity + 1` ; shift ;;
+	--)	shift ; break;;
+	esac
+done
+
+if [ $# != 3 ]
+then
+	usage
+fi
+
+id=$1
+major=$2
+port_count=$3
+
+i=0
+
+while [ $i -lt $MAXCHAN ]
+do
+	port=`zerofill $i`
+
+	if [ $i -lt $port_count ]
+	then
+		#
+		# For each device to be created, call the "creation" program
+		#
+
+		${DGRP_MK_SPEC} $default_mode $default_owner \
+		                $default_group $id \
+		                $major $i
+
+		rc=$?
+
+		if [ $rc -ne 0 ]
+		then
+			exit 1
+		fi
+
+		if [ $verbosity -ge 2 ]
+		then
+			echo "Devices for port $i have been prepared."
+		fi
+	else
+		#
+		# For each device which should not exist, try to "rm" it.
+		#
+
+		port=`zerofill $i`
+		for prefix in ${TTY_PREFIX} ${CU_PREFIX} ${PR_PREFIX}
+		do
+			file="${prefix}${id}${port}"
+
+			if [ -c $file ]
+			then
+				rm -f $file
+
+				rc=$?
+
+				if [ $rc -ne 0 ]
+				then
+					echo "Could not delete $file" >&2
+				else
+					if [ $verbosity -ge 1 ]
+					then
+						echo "$file deleted"
+					fi
+				fi
+			fi
+		done
+	fi
+
+	i=`expr $i + 1`
+done

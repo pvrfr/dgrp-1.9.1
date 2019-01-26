@@ -1,0 +1,38 @@
+The  "Examine Received / Transmit Data" displays allow for the browsing of
+data captured in the "Monitor Port Traffic" mode.   The data from only one
+direction  may  be  browsed  at  a time.  A highlighted cursor tracks your
+position in the buffer.
+
+The total amount captured and your current byte position within the buffer
+are displayed in the window heading.
+
+
+Keystrokes for browsing the data:
+
+   LEFT/RIGHT   (also h/l) Decrease/Increase your byte position by one. In
+                this way, you can scan the entire buffer simply by holding
+                down the right arrow.
+
+   UP/DOWN      (also k/j) Decrease/Increase your byte position by a line.
+
+   P/N          Decrease/Increase your byte position by whole pages.
+
+   T            Switch to the transmit buffer if viewing the receive one.
+
+   R            Switch to the receive buffer if viewing the transmit one.
+
+
+The  "C"  key  will  bring  you  to the "Capture" window in order to clear
+the capture buffer and begin capturing new data, whereas the escape or "Q"
+will  return  you  to  the channel display.
+
+
+The Redraw (^L) option causes the tool to redisplay the entire screen,
+particularly useful with "dirty" connections in which the display becomes
+corrupt.
+
+The Print Screen (^P) option invokes a screen dump  to  the  default  file
+/tmp/dpalog.   If  another  file and/or path is desired, simply invoke the
+tool with the -l option.
+
+        e.g.       dparp -l <logfile>

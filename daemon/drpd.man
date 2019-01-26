@@ -1,0 +1,196 @@
+. Copyright (c) 1998 Digi International, All Rights Reserved.
+.
+. $Id: drpd.man,v 1.8 2003/08/06 20:03:55 scottk Exp $
+.
+.TH DRPD 1M "January 17, 2000"
+.SH NAME
+.PP
+drpd - Realport Network Daemon
+.SH SYNOPSIS
+drpd [
+.B "-dnV"
+] [
+.BI "-p " port
+] [
+.BI "-e " <always/never>
+] [
+.BI "-q " encrypt port
+] [
+.BI "-s " speed
+]
+.I device
+.I node
+[
+.I speed
+]
+.SH AVAILABILITY
+Linux
+.SH DESCRIPTION
+.PP
+Each instance of
+.B drpd
+supports a single connection
+between a UNIX system and a RealPort client (for instance, a Digi PortServer).
+Each connection provides 8 to 64 Realport tty devices
+on the host.
+.PP
+Operation is as follows:
+.PP
+(1) 
+The program
+decodes its command parameters, daemonizes (if necessary), and opens the
+.B drp
+device for which it is responsible.
+.PP
+(2) The program allocates an unprivileged socket, and connects to
+the Realport server.  If the connection is unsuccessful, the program
+continues to attempt a connection at regular intervals until the
+connection succeeds.
+.PP
+(3) Upon successful connection, the program begins normal operation.
+During normal operation the program copies all data
+received from the Realport server to the
+.B drp
+device, and all
+data received from the
+.B drp
+device to the Realport server.
+.PP
+(4) If the first byte of a packet received from the
+.B drp
+device is an FF (indicating an error status) the
+packet is sent to the network connection, but then the
+connection is shut down and operation resumes at step (2)
+.PP
+(5) If the network connection is lost, the program writes a
+zero-length packet to the
+.B drp
+device, indicating the
+error condition and then goes back to step (2).
+.PP
+(6) Operation continues until the program is interrupted
+by the
+.B drpadmin
+program or the system shutdown procedure.
+When interrupted the program closes the
+.B drp
+device.
+This action hangs up all associated tty devices, unless the tty
+devices are insensitive to the carrier signal.
+.PP
+Except for parameter errors, drpd syslogs all
+abnormal conditions with priority
+.BR daemon.info .
+.PP
+Command parameters include:
+.PP
+.TP 10
+.I device
+An integer in the range 0-999 indicating
+the logical connection number and the devices associated
+with this daemon.  On HP-UX this is the same as the
+.BI /dev/drp D
+minor device number.
+.TP
+.I node
+The node name or the TCP/IP dot address of the
+Realport server.
+.TP
+.I speed
+An optional parameter useful on slow speed WAN links.
+.I Speed
+is a formatted string containing 1 to 5 decimal numbers, separated
+by commas or periods.  The numbers are:
+.IP
+(a) Maximum link speed in bits/second
+.br
+(b) Highest delay for maximum speed in milliseconds
+.br
+(c) Minimum link speed in bits/second
+.br
+(d) Lowest delay for minimum speed in milliseconds
+.br
+(e) Estimated packet header size
+.IP
+This parameter allows the user to configure a balance between latency
+(eg keystroke delay) and throughput.
+When the instantaneous delay between
+the UNIX system and the Realport client is below (b), the
+UNIX system transmits data at up to rate (a).  However
+when the delay exceeds (d), data is send only at speed
+(c).  When the delay is between (b) and (d), data is
+sent at a proportional value between (a) and (c).
+.IP
+In each of these computations we assume a packet header
+size of (e) for each packet sent across the link.  A value of
+46 bytes is assumed by default; this value is appropriate
+for Encapsulated Ethernet over Frame Relay.
+A value of 8 should be used for PPP links with Van Jacobsen
+header compression.
+.IP
+Most WAN users need specify only parameter (a) and let parameters
+(b) (c) (d) (e) take default values.
+For example
+most
+56K Frame Relay links with a combination of terminals
+and printers can use a simple
+.I speed
+string of just
+.BR 56000 .
+.SH OPTIONS
+.TP 14
+.B "-d"
+Enables verbose debugging information.  May be specified twice for
+even more information.
+.TP
+.B "-n"
+Enables the non-daemon mode.  Useful in non-standard configurations
+which wish to execute the daemon from the inittab.
+.TP
+.BI "-p " port
+Realport server
+.I port
+number.  Defaults to 771.
+.TP
+.BI "-e " <always/never>
+Realport with encryption flagserver
+.I Defaults to never.
+.TP
+.BI "-q " port
+Realport with encryption server
+.I port
+number.  Defaults to 1027.
+.TP
+.BI "-s " speed
+Inspects the given
+.I speed
+and then immediately
+exits.
+The program returns status 0 if the string is valid;
+otherwise it outputs an error message and returns status 2.
+This option is used by the
+.B drpadmin
+program.
+.TP
+.B "-V"
+Prints the current version number.
+.SH "EXIT STATUS"
+On normal completion with
+.B -V
+or
+.B -s
+returns exit status 0.
+.PP
+Upon receipt of an interrupt, or
+on a fatal execution error generates a syslog entry
+and exits with
+status 1.
+.PP
+On a parameter error generates a message to stderr, and exits
+with status 2.
+.SH "SEE ALSO"
+.PP
+.BR ditty-rp (1),
+.BR dgrp (8),
+.BR dgrp_cfg_node (8),
+.BR dgrp_gui (8)

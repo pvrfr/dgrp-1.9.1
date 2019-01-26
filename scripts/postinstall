@@ -1,0 +1,109 @@
+#!/bin/sh
+#
+# Linux RealPort Post Install script.
+# Should be run after make install.
+#
+# 1) Will be called automagically by rpm -i.
+# 2) Needs to be called manually for the tar.gz install
+#    by doing a "make postinstall"
+
+echo "Running Post Install script..."
+
+# Let the system know about our scripts in /etc/rc.d/init.d/
+CHKCONFIG_BIN=""
+if [ -x /sbin/chkconfig ]
+then 
+	CHKCONFIG_BIN="/sbin/chkconfig"
+fi
+if [ -x /usr/sbin/chkconfig ]
+then
+	CHKCONFIG_BIN="/usr/sbin/chkconfig"
+fi
+if [ $CHKCONFIG_BIN ]
+then
+	$CHKCONFIG_BIN --add dgrp_daemon
+	$CHKCONFIG_BIN --add dgrp_ditty
+	echo "Added RealPort (dgrp) scripts to system startup"
+else
+	echo "RealPort (dgrp) startup scripts must be manually installed -- see release notes"
+fi
+
+
+# Convert old style config to new style config if needed...
+if [ -f /etc/dgrp.backing.store ]
+then
+	echo "Converting config file..."
+	#rm -f /tmp/dgrp.backing.store.new
+	rm -f /tmp/dgrp/dgrp.backing.store.new
+
+	while read id ip pcnt speed ipport mode owner grp encrypt encrypt_ipport rest
+	do
+		firstchar=`expr "${id}#" : '\(.\).*'`
+		case $firstchar in
+		'#')
+			#printf "$id $ip $pcnt $speed $ipport $mode $owner $grp $encrypt $encrypt_ipport $rest\n" >> /tmp/dgrp.backing.store.new
+			printf "$id $ip $pcnt $speed $ipport $mode $owner $grp $encrypt $encrypt_ipport $rest\n" >> /tmp/dgrp/dgrp.backing.store.new
+			continue;
+		esac
+
+		if [ -z "$encrypt" ]
+		then
+			encrypt="never"
+		fi
+
+		if [ -z "$encrypt_ipport" ]
+		then
+			encrypt_ipport="default"
+		fi
+
+		#printf "$id $ip $pcnt $speed $ipport $mode $owner $grp $encrypt $encrypt_ipport $rest\n" >> /tmp/dgrp.backing.store.new
+		printf "$id $ip $pcnt $speed $ipport $mode $owner $grp $encrypt $encrypt_ipport $rest\n" >> /tmp/dgrp/dgrp.backing.store.new
+
+	done < /etc/dgrp.backing.store
+
+	mv /etc/dgrp.backing.store /etc/dgrp.backing.store.old
+	#mv /tmp/dgrp.backing.store.new /etc/dgrp.backing.store
+	mv /tmp/dgrp/dgrp.backing.store.new /etc/dgrp.backing.store
+fi
+
+# Determine if the user's system is using UDEV.
+# If they are, move our UDEV rules file into the correct place.
+echo "Checking to see if UDEV appears to be used on this system..."
+if [ -d /etc/udev/rules.d ]
+then
+	echo "Yes, moving Digi RealPort UDEV rules to correct location"
+#	mv /tmp/10-dgrp.rules /etc/udev/rules.d/10-dgrp.rules
+	mv /tmp/dgrp/10-dgrp.rules /etc/udev/rules.d/10-dgrp.rules
+else
+	echo "NO, removing Digi RealPort UDEV rules file"
+#	rm -rf /tmp/10-dgrp.rules
+	rm -rf /tmp/dgrp/10-dgrp.rules
+fi
+
+# Create any symlinks we want
+if [ ! -e /usr/bin/dgrp_cfg_node ]
+then
+	ln -s /usr/bin/dgrp/config/dgrp_cfg_node /usr/bin/dgrp_cfg_node
+fi
+
+if [ ! -e /usr/bin/dgrp_gui ]
+then
+	ln -s /usr/bin/dgrp/config/dgrp_gui /usr/bin/dgrp_gui
+fi
+
+if [ ! -e /usr/bin/ditty ]
+then
+	ln -s /usr/bin/ditty-rp /usr/bin/ditty
+fi
+
+if [ ! -e /usr/bin/dinc ]
+then
+	ln -s /usr/bin/dinc.dgrp /usr/bin/dinc
+fi         
+
+
+# Finally, force dependency checks
+if [ -e /sbin/depmod ]
+then
+	/sbin/depmod -a
+fi

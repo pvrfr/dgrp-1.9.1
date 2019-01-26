@@ -1,0 +1,287 @@
+.\" @(#)dgipserv.1	1.2 4/23/01 Copyright (C) 1997-2002 Digi International Inc., All Rights Reserved;
+.TH DGIPSERV 1 "24 August 2002"
+.ds ]W Digi International
+.SH NAME
+dgipserv \- serves IP addresses to Digi EtherLite(R) modules
+.SH SYNOPSIS
+.B dgipserv
+[
+.I flags
+]
+.I hw_addr ip_addr
+.SH DESCRIPTION
+The
+.B dgipserv
+utility will serve an IP address to an EtherLite(R) module
+in response to a request from the module.
+
+It is provided for the use of customers who do not wish to use either
+a BOOTP or a DHCP server, preferring instead to either (1) manually
+serve an IP address each time the module is switched on, or (2) store an
+IP address in the module's EEPROM (non-volatile memory), thereby
+eliminating the need for further IP-address service.
+
+Additional functionality--enabled through command-line flags--includes
+resetting the module, configuring its authorized-host list, and
+uploading firmware to it.  See below for details.
+
+.B dgipserv
+is intended to be quick to learn and easy to use.  There're no
+configuration files--everything goes on the command line.
+
+One aspect of
+.B dgipserv
+should be kept in mind to ease its use.  As mentioned above and as
+implied it its name,
+.B dgipserv
+is a server.  More specifically, it is a single-use BOOTP server.
+(If also uploading firmware
+though use of the
+.I -firmware
+command-line flag, it also acts as a single-use TFTP
+server.)  The client of this server is the EtherLite(R) module.  It issues
+requests which are then served by
+.BR dgipserv "."
+The EtherLite(R) module issues these requests only in two instances: 
+(1) upon power-up, and (2) after a module reset.
+Hence,
+.B dgipserv
+will only work if a module has just been powered up or reset and
+is rapidly blinking its "on" indicator.
+Getting the module to this state can be done in one of two ways:
+(1) by disconnecting and then restoring power to the EtherLite(R) module, or
+(2) by using the
+.I -reset
+command-line flag described below.
+Keep this server-client relationship in mind and you should
+find
+.B dgipserv
+easy to use.
+.SH "OPTIONS"
+
+.I flags
+can include:
+.TP 15
+.I -reset
+to reset the module before doing anything else (This eliminates the need to
+physically disrupt and restore the power supply to a module prior to serving 
+it an IP address if that module has already been served an IP address.
+This reset is the same operation as that done by
+.BR cdelsreset "."
+Rule of thumb: If the module's "on" indicator is steadily lit, you will
+likely want to use the
+.I -reset
+flag.
+See also Note 1 below.)
+.TP
+.I -store
+to store the IP address in the module's EEPROM
+.TP
+.I -broadcast
+to store (via bootp broadcast) the IP address in the module's EEPROM
+.TP
+.I -erase
+to erase a stored IP from the module's EEPROM
+.TP
+.I -gateway
+to set the gateway address for the module. Combine with -store to save the gateway. NOTE: Setting the gateway is optional.
+.TP
+.I -netmask
+to set the modules netmask. Combine with -store to save the netmask. NOTE: Setting the gateway is optional. Etherlites default to using a class B netmask.
+.TP
+.IR "-host auth_ip" " [ " auth_netmask " ] "
+to add an IP address or list of IP addresses
+to the module's authorized host list
+(This flag may be used up to eight times on one command line
+unless the EtherLite(R) module has an IP address stored in EEPROM.
+See the note below under "Notes on EtherLite(R) module Behavior.")
+.TP
+.IR "-firmware filename"
+to upload a firmware image to the EtherLite(R) module
+once the IP address has been served
+.LP
+All flags may be abbreviated to a single letter
+.RI "(" -r ", " -s ","
+.IR  -e ", etc.)."
+They may not be combined (e.g., "-rs").
+.LP
+.I hw_addr
+is the hardware (MAC) address of the device to be served its IP address.
+.LP
+.I ip_addr
+is the IP address to be served.
+.LP
+.B Note 1:
+If you use
+.B dgipserv
+to change the IP address of an EtherLite(R) module, 
+please make sure to reconfigure the Digi EtherLite(R) software driver
+to reflect the change.
+.LP
+.B Note 2:
+The
+.I -store, -broadcast, 
+and
+.I -erase
+flags only work on EtherLite(R) modules with firmware version 6.4 or later.
+The -reset flag must be combined with -broadcast, -erase, or -store to work.
+.LP
+.B Note 3:
+.I hw_addr
+should be expressed in hexadecimal (as on the underside of the EtherLite(R) 
+module, e.g., 00-A0-E7-00-03-63 or 00A0E7000363) and
+.I ip_addr
+in Internet standard (decimal) dot notation (e.g., 192.9.200.123).
+.SH "EXAMPLES"
+.ta 0.75in
+This command will deliver the IP address 192.9.200.123 to the
+EtherLite(R) module with hardware address 00-A0-E7-00-03-63:
+
+	dgipserv 00-A0-E7-00-03-63 192.9.200.123
+
+The dashes in the hardware address are not obligatory.  Note that the
+hardware address is expressed in hexadecimal whereas the IP address is
+expresses in decimal.  While this doesn't make much sense, it does
+conform to conventions.
+
+This command will serve the same address to the same module,
+but will also store it in the module's EEPROM:
+
+	dgipserv -s 00-A0-E7-00-03-63 192.9.200.123
+
+This command will allow you to store an address that is not a valid address on your network. This is useful for storing addresses to be used on a different network:
+
+	dgipserv -b 00-A0-E7-00-03-63 10.45.100.1
+
+Note that the last two commands will work only on modules having firmware
+version 6.4 or later.
+
+This command does the reverse, telling the module to erase its stored
+IP address:
+
+	dgipserv -e 00-A0-E7-00-03-63 192.9.200.123
+
+Note that this command will work only on modules having firmware
+version 6.4 or later.
+
+This command serves the IP address, but also tells the module to allow
+connections only from the two specified hosts, 192.9.200.10 and
+192.9.200.11:
+
+	dgipserv -h 192.9.200.10 -h 192.9.200.11 00-A0-E7-00-03-63 192.9.200.123
+
+By default, the module will allow connections from any host.
+
+This command serves the IP address, but tells the module to allow
+connections only from hosts with an IP address which matches
+192.9.200.0, taking into consideration only those address bits
+set in 255.255.255.0:
+
+	dgipserv -h 192.9.200.0 255.255.255.0 00-A0-E7-00-03-63 192.9.200.123
+
+In other words, connections from hosts with addresses of the form
+192.9.200.* will be allowed.  All others will be rejected.
+
+This command will reset the EtherLite(R) module and then, upon its request,
+serve and store the IP address given:
+
+    dgipserv -r -s 00-A0-E7-00-03-63 192.9.200.123
+
+This command will upload the "el16.prm" file to the EtherLite(R) module
+after resetting and serving it the IP address:
+
+    dgipserv -r -f el16.prm 00-A0-E7-00-03-63 192.9.200.123
+
+
+
+.SH "NOTES ON ETHERLITE(R) MODULE BEHAVIOR"
+
+An EtherLite(R) module cannot be used until it assumes an IP address.  The
+"on" indicator of an EtherLite(R) module lacking an IP address will blink
+rapidly.  Once the module obtains its IP address, the "on" indicator
+will be steadily lit.
+
+Upon power-up or upon module reset, an EtherLite(R) module will issue a BOOTP
+request.  If this request is serviced and a response delivered to the
+module, the module will use the IP address supplied in the response.
+
+If no response is received in four seconds
+.B and
+the module has a stored IP address, it will assume that IP address.
+As shipped, a new EtherLite(R) module does
+.B not
+have a stored IP address.
+
+Otherwise, if no response is received in four seconds and the module
+does not have a stored IP address, additional BOOTP requests will be
+issued until one is answered.  Four requests will be issued during the
+first minute, and then only one request every minute thereafter.
+
+A module which has a stored IP request will accept a response to its one
+BOOTP request only if the response is tagged with the "store IP
+address" flag.  Otherwise it will be ignored.
+
+Once an EtherLite(R) module has been served its IP address, it will attempt to
+download a new firmware image via TFTP to be stored in its EEPROM and
+used.  If unsuccessful, it will use the firmware image already in its
+EEPROM.
+
+Note that only the module's IP address can be stored in EEPROM.  The
+authorized-host table is never stored in EEPROM; upon power-up, an
+EtherLite module with a stored IP address will accept connections from
+all hosts.
+
+.SH "ADDITIONAL NOTES"
+
+Storing and erasing IP addresses are potentially dangerous operations.
+.B Heed the on-screen warnings well!
+
+.B dgipserv
+may not be run on a system on which a BOOTP server is running.
+The
+.I -firmware filename
+flag cannot be used on a system on which a TFTP server is running.
+
+On machines with more than one Ethernet interface,
+.B dgipserv
+may tell the module the wrong IP address to use when retrieving
+its firmware.  This is a bug.
+
+.B dgipserv -reset
+will hang if the module is already awaiting an IP address.
+This too is a bug.
+
+In general,
+.B dgipserv
+is not as robust as a full-featured BOOTP or DHCP server,
+such as the CMU BOOTP server on which it was partially based.  That said,
+it should suffice for use in most contexts.
+.B dgipserv
+can deliver IP addresses to most, though perhaps not
+all, non-Digi Ethernet devices, and
+.B dgipserv
+will work through most, though again perhaps not all, gateways.
+
+.B dgipserv
+implements only enough TFTP to upload firmware to
+EtherLite(R) modules and nothing more.
+
+EtherLite(R) is a registered trademark of Digi International Inc.
+.SH "PROVIDED BY"
+.sp
+Technical Support
+.br
+Digi International Inc.
+.br
+11001 Bren Road E.
+.br
+Minnetonka, MN 55343
+.br
+Phone: 1-952-912-3456
+.br
+email: support@digi.com
+.br
+WWW: http://www.digi.com/
+.br
+FTP: ftp.digi.com
+.sp

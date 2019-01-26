@@ -1,0 +1,53 @@
+#
+# DPA/RP Makefile
+#
+
+INCLUDES=  -I./inc
+
+#
+#  Linux defines
+#
+CC = gcc
+CFLAGS = @CFLAGS@
+CFLAGS += -g -W -Wall -DLINUX $(INCLUDES)
+LIBS = -lpanel -lncurses
+
+HELP_FILES= help/dpa_info1 \
+            help/dpa_info2 \
+            help/dpa_info3 \
+            help/dpa_info4 \
+            help/dpa_info5
+
+OBJS =		linux.o main.o general_panels.o curses_helpers.o attribs.o \
+		identify_panel.o channel_panel.o loopback_panel.o \
+		scope_panel.o exam_panel.o info_panel.o \
+		node_panel.o help_files.o
+
+all: dparp
+build: dparp
+
+linux: dparp
+
+dparp: $(OBJS)
+	${CC} ${CFLAGS} -o dparp $(OBJS) ${LIBS} 
+
+linux.o: os/linux.c
+	${CC} ${CFLAGS} -c os/linux.c -o linux.o
+
+clean:
+	rm -rf *.o help_files.c
+
+clobber: clean
+	rm -f dpa_rp
+
+#----------------------------
+#
+#  Custom targets
+#
+#----------------------------
+help_files.c: $(HELP_FILES)
+	for f in $(HELP_FILES) ; \
+	do \
+		./encode_txtfile.sh $$f `basename $$f` ; \
+	done > help_files.c
+

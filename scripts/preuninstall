@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# Linux RealPort Pre UnInstall script.
+# Should be run before a "make uninstall".
+#
+# 1) Will be called automagically by rpm -e.
+# 2) Needs to be called manually for the tar.gz install
+#    by doing a "make preuninstall"
+
+echo "Running Pre UnInstall script..."
+
+# Stop all daemons...
+pid=`ps -ef | grep drpd | awk '{print $2}'`
+[ ! -z "$pid" ] && kill -1 ${pid} 2>/dev/null
+# Wait for a second to let the daemons die off.
+sleep 1
+
+#
+# in the pre-uninstall phase, we need to tell the system
+# that we are going to delete our scripts in /etc/rc.d/init.d/
+#
+CHKCONFIG_BIN=""
+if [ -x /sbin/chkconfig ]
+then
+	CHKCONFIG_BIN="/sbin/chkconfig"
+fi
+
+if [ -x /usr/sbin/chkconfig ]
+	then CHKCONFIG_BIN="/usr/sbin/chkconfig"
+fi
+
+if [ $CHKCONFIG_BIN ]
+then
+	$CHKCONFIG_BIN --del dgrp_daemon
+	$CHKCONFIG_BIN --del dgrp_ditty
+	echo "Removed RealPort (dgrp) scripts from system startup"
+else
+	echo "RealPort (dgrp) startup scripts must be manually removed -- see release notes"
+fi
+
+
+# Remove any symlinks the postinstall script might have made.
+if [ -L /usr/bin/ditty ]
+then
+	if [ "`ls -l /usr/bin/ditty | grep -c ditty-rp`" -gt "0" ]
+	then
+		rm -f /usr/bin/ditty
+	fi
+fi
+
+if [ -L /usr/bin/dinc ]
+then
+	if [ "`ls -l /usr/bin/dinc | grep -c dgrp`" -gt "0" ]
+	then
+		rm -f /usr/bin/dinc
+	fi
+fi
+  
+rm -f /usr/bin/dgrp_cfg_node
+rm -f /usr/bin/dgrp_gui
+
+# Remove UDEV rules file, if its still around.
+if [ -f /etc/udev/rules.d/10-dgrp.rules ]
+then
+	rm -f /etc/udev/rules.d/10-dgrp.rules
+fi
+
+# Finally, Unload dgrp module if we can
+if [ "`/sbin/lsmod | grep -c dgrp`" -gt "0" ]
+then
+	/sbin/rmmod dgrp
+fi

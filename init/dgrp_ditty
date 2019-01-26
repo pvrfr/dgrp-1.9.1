@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# chkconfig: 345 95 30
+# description: Executes "ditty" commands on behalf of the user \
+#              typically at system startup time.
+#
+### BEGIN INIT INFO
+# Provides:		ditty-rp
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog 
+# Default-Start:	3 5
+# Default-Stop:		0 1 2 6
+# Short-Description:	dgrp_ditty
+# Description:		Start dgrp_ditty
+### END INIT INFO
+
+# Source dgrp file and dir locations
+[ -f /usr/bin/dgrp/config/file_locations ] || exit 0
+. /usr/bin/dgrp/config/file_locations
+
+# Check that the ditty command file exists.
+[ -f ${DGRP_DITTYCMDS} ] || exit 0
+
+RETVAL=0
+
+# See how we were called.
+case "$1" in
+  start|restart|reload)
+	echo "Running ${DGRP_DITTYCMDS}: "
+	exec sh ${DGRP_DITTYCMDS}
+	;;
+  stop|status)
+	RETVAL=0
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|reload|status}"
+	RETVAL=1
+esac
+
+exit $RETVAL

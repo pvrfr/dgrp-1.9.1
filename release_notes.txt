@@ -1,0 +1,591 @@
+                      Release Notes PN 93000359_X6P
+
+                 Digi RealPort Driver Package for Linux
+                            dgrp-1.9-36.i386.rpm
+
+                       Tested Linux Distributions:
+                 Red Hat Enterprise Linux 2.1, 3, 4, 5.x, 6.x, 7.x
+                      Red Hat Linux 7.2, 7.3, 8, 9
+                 Fedora Core 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17
+       Mandriva Linux 8.2, 9.0, 9.1, 9.2, 10.0, 10.1, 2006, 2007.1, 2008
+            SuSE 8.1, 8.2, 9.0, 9.1, 9.2, 9.3, 10.0, 10.1, 10.2, 11.1, 11.2
+                           Debian 3.0.r1, 3.1, 4, 6.0
+                        Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04
+
+
+                         Linux Kernels supported:
+                            2.4.x (UP and SMP)
+                            2.6.x (UP and SMP)
+                            3.x.x (UP and SMP)
+
+                       RPM Part Number 40002086_X6P
+
+                              02/08/2016
+
+
+  CONTENTS
+  
+  Section    Description
+  1          Introduction
+  2          Supported Products
+  3          Enhancements
+  4          Bug Fixes
+  5          Known Limitations
+  6          Additional Information
+  7          History
+
+
+
+  1. INTRODUCTION    
+
+     Digi RealPort Linux is a driver package for Digi's Ethernet-based
+     Serial Products.
+     
+     It is assumed that TCP/IP is running on the system and is properly
+     configured.
+     
+     It is also useful, though not necessary, for the Wish package to
+     be installed, or some other TCL interpreter, in order to use the
+     RealPort Manager configuration tool.
+     
+     It is currently supported on the following hardware platforms:
+     
+     o Standard i386/i486 and Pentium PC (x86 32bit)
+     o x86 64bit
+     
+     and is currently supported on the following Linux distributions:
+     
+     o Red Hat Enterprise Linux 2.1, 3, 4, 5.x, 6.x, 7.x
+     o Red Hat Linux 7.2, 7.3, 8, 9
+     o Fedora Core 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 18
+     o Mandriva Linux 8.2, 9.0, 9.1, 9.2, 10.0, 10.1, 2006, 2007.1, 2008
+     o SuSE 8.1, 8.2, 9.0, 9.1, 9.2, 9.3, 10.0, 10.1, 10.2, 11.1, 11.2
+     o Debian 3.0.r1, 3.1, 4, 6
+     o Ubuntu 7.04, 7.10, 8.04, 8.10, 12.04
+     
+     NOTE: Because of the rapid rate of releases from each respective
+           Vendor, the tested/supported list above quickly becomes
+           out of date.
+           
+           This driver package has been tested and verified working for
+           kernels up to and including version 2.4.37, 2.6.38, and on
+           various 3.X kernels (3.0.0, 3.0.58 and 3.8.0, 3,9.0, 3.10.0,
+           3.11.0, 3.12.0, 3.13.0 and 3.14-rc4) from kernel.org.
+           
+           It is anticipated that this driver will work with Vendor kernel
+           releases newer than the above but cannot be guaranteed because
+           each respective Vendor can, and does, add their own various
+           changes/patches to the stock kernel.org kernel.
+           
+           These additional Vendor patches to the stock kernel.org linux
+           kernel can cause unforeseen incompatibilities with this driver.
+     
+     Please reference the following number(s) when searching the Digi
+     International web site (www.digi.com) or ftp site (ftp.digi.com)
+     for the latest software package:
+     
+     RPM Part Number: 40002086_X6P
+
+
+  2. SUPPORTED PRODUCTS
+
+     Digi Connect Family
+     Digi EtherLite Family
+     Digi Flex Family
+     Digi One Family
+     Digi CM Family
+     Digi PortServer Family
+     Digi PortServer II Family
+     Digi PortServer TS Family
+     Digi PortServer TS MEI Family
+     Digi PortServer TS W MEI Family
+     Digi PortServer TS M MEI Family
+     Digi PortServer TS H MEI Family
+     Digi PortServer TS P MEI Family
+     IBM LAN Attached RAN 16
+
+
+  3. ENHANCEMENTS
+     o None
+
+  4. BUG FIXES
+     o Fix an installation problem on systems such as RHEL 7 where
+       /etc/sysconfig/network exists but does not define a NETWORKING
+       environment variable.
+
+     o Fix a driver build problem on newer kernels, which removed
+       definitions for TTY_CLOSING (in v3.11) and TTY_HW_COOK_IN (in v3.19).
+       Note that Red Hat backported at least some of these definition
+       removals into RHEL 7 kernels starting sometime shortly after
+       3.10.0-229, so this driver fix is also needed for their newer
+       3.10 kernels.
+
+     o Add a description of the rtstoggle option to the ditty man page.
+
+     o Fix a timing vulerability where an application that fast cycles
+       many port open/closes could occasionally obstruct a close from
+       completing properly, thus leading to a "locked" port.
+
+     o Fix a problem that could cause the dpa.dgrp utility program to
+       crash with an arithmetic exception if it happened to catch a port
+       during the early stages of an uncompleted open.
+      
+
+  5. KNOWN LIMITATIONS
+
+     o To build the dgrp driver you must have first loaded the matching
+       kernel source tree for your target kernel.
+
+     o To verify that you have matching kernel source, run "/bin/uname -r"
+       and check to make sure the /usr/src directory has the corresponding
+       linux-<version> directory.
+
+     o If you are running a prebuilt kernel from a packaged distribution,
+       this typically involves loading the kernel sources from your
+       distribution CD to your system, then using the following commands
+       to do the following:
+
+       1. cd /usr/src/linux-<your_version_of_the_kernel>
+       2. make mrproper           Clean up any old version files.
+       3. make oldconfig          Make a configuration file to match
+                                  your running kernel.
+       4. make dep                Create the dependency and version files.
+
+       Now you can load and build the dgrp driver package.
+
+
+     o Occasionally, a Linux Vendor will ship a kernel that simply cannot
+       be autodetected to add the various changes that might be required
+       for that specific kernel.  Because of this, there is an option that
+       can be used for both the srpm and tgz to tell the driver package
+       exactly what distribution you have.
+
+       Currently, the only needed and recognized option is for
+            Red Hat AS/ES/WS 3 and Fedora
+       The flags are:
+            REDHAT_AS_3 / REDHAT_ES_3 / REDHAT_WS_3
+            FEDORA
+
+       Examples:
+
+       To tell the srpm that you have Red Hat AS 3, run this instead:
+
+            o rpmbuild --rebuild --define DISTRO=REDHAT_AS_3 40002086_X6P.src.rpm
+
+       To tell the tgz that you have Red Hat AS 3, run this during the  
+       "configure" phase:
+
+            o ./configure DISTRO=REDHAT_AS_3
+
+
+     o To install this package correctly under SuSE 8.0, a symlink
+       from /usr/lib/libncurses.so.2.1 to /usr/lib/libncurses.so needs to
+       be created.  Simply run this command:
+            ln -s /usr/lib/libncurses.so.2.1 /usr/lib/libncurses.so
+       then start the installation of the Realport package.
+
+     o There is a known incompatibility/issues with the 2.6.26 kernel.
+       Because of these incompatibility/issues, the 2.6.26 kernel is not
+       supported with this driver.
+
+     o There is a known incompatibility between our driver and the
+       Red Hat 7.1 distribution which ships a custom modified 2.4 kernel.
+       The problem manifests itself with device driver usage counts which
+       never decrease, possible loss of use of some numbers of ports,
+       and possible system instability.  The root cause is in the
+       modification of the kernel, which makes a change to an internal
+       interface and introduces an incompatibility.
+
+     o There is a problem with the SBRK ioctl.  When a BRK is 
+       sent no more data is transmitted until the port is closed.
+
+     o The ports on EM modules are observed to perform at a slightly
+       reduced speed during throughput testing.
+
+     o The ditty PRINTER option is not yet supported.
+
+     o If this RealPort driver package detects that the system's OpenSSL
+       layer is too old to be used reliably, the driver will compile its
+       own more current version of OpenSSL.  This compile could take a
+       considerable amount of time, anywhere from 5 to 60 minutes extra.
+       The extra time it takes depends upon how fast of system the driver
+       is being compiled on.
+
+
+  6.   ADDITIONAL INFORMATION
+
+     o This driver is distributed both as a source RPM and as a compressed
+       tar file of the source.
+
+     o If you install the source RPM version of the source, it is usually
+       as easy as running the following:
+
+           1. rpmbuild --rebuild 40002086_X6P.src.rpm
+           2. rpm -i dgrp-1.9-36.i386.rpm
+
+     o If you install the compresed tar version of the source, it is usually
+       as easy as running the following:
+
+           1. tar xvfz 40002086_X6P.tgz
+           2. cd ./dgrp-1.9
+           3. ./configure
+           4. make all
+           5. make install
+           6. make postinstall
+
+     o This package includes several support utilites:
+
+           o ditty                 - an stty replacement.
+           o dinc                  - a cu/tip replacement.
+
+     o There is a package of configuration tools provided that are,
+       by default, located in the /usr/bin/dgrp/config directory.
+       There are scripts for using the command line to add and remove
+       products, as well as the RealPort Manager.  
+       This is essentially a graphical front end for the scripts and a
+       visual tool for monitoring individual serial ports.
+
+    o The software package includes two startup scripts in either the
+      /etc/rc.d/init.d or /etc/init.d directories named "dgrp_daemon" and
+      "dgrp_ditty".
+      These scripts will be executed at startup automatically if the
+      "chkconfig" tool is present on the system during the post installation
+      phase of the driver install.  Otherwise, these scripts must be manually
+      added to the system startup.
+
+    o To load and initialize the driver by hand, execute "dgrp_daemon start".
+      To stop the driver daemons and unload the driver, execute
+      "dgrp_daemon stop" followed by "rmmod dgrp".
+
+
+    o The following manpages are provided:
+          ditty-rp(1), 
+          drpd(8), 
+          dgrp(8),
+          dgrp_cfg_node(8), 
+          dgrp_gui(8). 
+
+    o Red Hat 7.1 -- Kernel Compatibility Issues
+         Some 2.4 kernel-based distributions (Red Hat 7.1 included)
+         have a patch applied to them which modifies the behavior of
+         Linux when an open of a serial port is canceled (for instance,
+         if an application is waiting for the carrier signal and a user
+         hits CTRL-C to kill the application)
+
+         With this behavior change, the device driver is unable to
+         cleanup its internal data structures and the sane functioning
+         of the driver is compromised.  The classic symptom of this
+         problem is that the command "lsmod", which (among other things)
+         will return a count of the applications using the device driver,
+         will return a non-zero value even if all applications associated
+         with the serial ports are killed.
+
+         Unfortunately, it is impossible (from within the device driver)
+         to determine which behavior is implemented in the running kernel.
+         However, Digi now provides a workaround to allow customers with
+         this problem to change the Digi behavior to be compatible with
+         these "patched" kernels.
+
+        To enable the change which provides alternate behavior when a
+        serial "open" call fails, execute the following after the device
+        driver is loaded:
+
+            echo "alt_fail_open=1" > /proc/dgrp/info
+
+        To return to the standard behavior, execute:
+
+            echo "alt_fail_open=0" > /proc/dgrp/info
+
+        To examine the current state of this driver tuning variable:
+
+            cat /proc/dgrp/info
+
+       Unfortunately, this command must be executed each time the device
+       driver is loaded (i.e. when the system is booted).  To make this
+       process easier for customers, the Digi standard driver startup
+       tools will execute the command on the customer's behalf when it
+       loads the driver if the following command is executed:
+
+           touch /usr/bin/dgrp/config/alt_fail_open
+
+       This command will create a file in your file system.  The Digi
+       tools, if they detect the existence of this file, will enable the
+       "alt_fail_open" behavior on your behalf at every system boot.
+   
+
+
+  7. HISTORY
+    o Version 1.9-35
+          o Previously there was a time window at the beginning of port
+            opens during which "dgrp_cfg_node" could mistakenly conclude
+            that the corresponding node was idle.  If "dgrp_cfg_node uninit"
+            were called during this window it could crash the kernel.  A new
+            detection mechanism has been added to cover these conditions.
+
+    o Version 1.9-34
+          o Fix driver build problem on systems (such as RHEL 7) that define
+            CONFIG_UIDGID_STRICT_TYPE_CHECKS.
+
+    o Version 1.9-33
+          o Added support for the now latest 3.X kernels (from 3.9.0 through
+            3.14).
+
+          o Use /tmp/dgrp (rather than /tmp) during installation to avoid
+            the unintended side-effect of modifying the permissions on /tmp.
+
+          o Fix an initialization problem where first opens of transparent
+            print devices (/dev/pr*) could crash 3.7.0 and newer kernels.
+
+    o Version 1.9-32
+         Interim test release
+
+    o Version 1.9-31
+         o Added support for 3.X kernels through 3.8.
+
+         o Changed the dgrp udev rules:
+              a. Use SYMLINK rather than NAME since the latter causes
+                 problems on newer systems.
+
+              b. Add TAG="systemd" so dgrp devices will be recognized
+                 on systemd-based distributions (e.g: to start getty's).
+
+         o Updated configure scripts to add support for newer
+           distributions.
+
+    o Version 1.9-30
+          o Added support for kernels up to 2.6.38
+
+    o Version 1.9-20
+
+          Added support for kernels up to 2.6.28
+
+          Added support for many new versions of distributions.
+
+          Added support for new style "init" scripts in SuSE 11.1
+
+          Fixed very rare data corruption issue when under very high
+          loads and multiple PortServers and SMP.
+
+    o Version 1.9-17
+
+          Added support for Red Hat Enterprise 5,
+
+          Added support for Fedora Core 5, 6 and 7.
+
+          Fixed problem with registering our devices with sysfs
+          in 2.6.18.
+
+          Fix compile WARNINGs under 2.6.18.
+
+          Fix a problem with the RealPort UDEV script when using
+          new versions of UDEV.
+
+          Fix problem on network disconnect/reconnects where
+          the port would always bring up DTR/RTS, even in 
+          cases where the port had both signals down before
+          the network disconnect.
+
+    o Version 1.9-6
+
+          Added support for DPA for RealPort.
+          The utility is installed as /usr/bin/dpa.dgrp
+
+          Added support for SYSFS in the 2.6 kernels.
+
+    o Version 1.9-4
+
+          Fixed problem with setting baud rates higher than 38400
+          when using the driver on the IBM pSeries (PPC64) platform.
+
+    o Version 1.9-1
+
+          Fixed driver not working under 2.6.10 kernels and higher.
+
+          Fixed problem with adding similar node names to the driver.
+
+    o Version 1.8-1
+
+          Added RTS Toggle support to the driver.
+
+          Added support for the new Alan Cox TTY layer changes in the kernel.
+
+          Added support for Fedora Core 3, Mandriva Linux 10.1
+
+          Added -n option back into the daemon.
+
+          Added more race condition checking in the tty_close
+          routine and the input routine.
+
+          Fixed driver not working under 2.6.8 kernels and higher.
+
+    o Version 1.7-1
+
+          Added support for x86 64bit.
+          Added support for Fedora Core 1, Core 2.
+          Updated SSL version to 0.9.7d
+          Removed support for Linux 2.2 kernels.
+          Fixed problem with installing from the tar.gz image.
+          Fixed problem with major() and minor() symbols not being found
+             on very early versions of the 2.4 kernels.
+          Fixed problem on setting the following "o flag" settings:
+             nl<0/1> cr<0/1/2/3> tab<0/1/2/3> bs<0/1> vt<0/1> ff<0/1>
+          Fixed man page of ditty, now correctly describes [-]DTR.
+          Fixed dgrp_cfg_node to correctly set device permissions
+             when using the -m flag.
+          Fixed dgrp_cfg_node to correctly set owner and group
+             when both options are selected.
+          Fixed dgrp_cfg_node to correctly set WAN line speed.
+          Fixed reporting DTR inconsistancy when opening and closing
+             the tty ports very rapidly.
+          Reworked locking in dgrp_tty_write to fix possible deadlock.
+          Fixed possible race condition in tty_close and dgrp_input.
+          Added fix to resolve possible false "RealPort protocol error"
+             detection.
+          Fixed bug on port close.  Port might not have gotten drained
+             before the close.
+
+    o Version 1.6-2
+
+          Added support for RealPort with encryption.
+          Added support for Red Hat 9, Suse 8.2, Mandriva Linux 9.1.
+          Added support in ditty for the "startin" and "startout" options.
+          dgipserv - Added support to set unassigned Ethernet address,
+              support for setting the tftp server IP address, support for
+              setting virtual ports and virtual ports timeouts, and support
+              for setting optimize to throughput or latency.
+          Fixed "configure" script problem where modversion.h wasn't being
+              found in the proper location.
+          Fixed include file problem where the driver would not compile
+              correctly under some newer versions of the 2.4 kernel.
+          Fixed problem with an incorrect assert message being generated.
+
+    o Version 1.5-0:
+
+          Added Transparent print support. Please read the man page for
+             "dgrp", under section "Transparent Print" for more information.
+          Changed package install to run a "configure" script first
+             before trying to compile the driver. The script should catch
+             most of the problems that the compile might have beforehand,
+             and give a much better description of the problem than a
+             cryptic compiler error message.
+          Added Support for Red hat 7.3, Suse 8, Mandriva Linux 8.2,
+             and Caldera OpenLinux 3.1.1 (server and workstation).
+          Fixed off-by-one error in the tbuf parsing.  This bug, although
+             very rare, could have caused the kernel to panic, or cause 
+             random kernel memory corruption.
+
+    o Version 1.4-0:
+
+          Improved support for Red Hat 7.1 by offering an architecture to
+             workaround a problematic kernel patch shipped with that
+             distribution.
+          Added support for EL-8, EL-16 and EL-32.
+          Added the "dgelreset" application, which allows one to reset
+             an EtherLite regardless of whether it is running RealPort
+             compatible firmware, and without having to specify a
+             MAC address.
+          Added "MODULE LICENSE" information to the device driver, in
+             order to comply with anti-tainting policies in
+             newer 2.4 Linux kernels.
+          Modified driver to prevent port "hangup" in the event that the
+             daemon dies.
+          Added TCFLSH handling to "ditty-rp"... previously, the
+          "flushin", "flushout", and "flush" options didn't work.
+    o Version 1.3-0: 
+
+          Added full support for Digi's EtherLite products which are
+             running Digi RealPort compatible firmware, including the 
+             EtherLite 2, EtherLite 160, EtherLite 162,
+             and the EtherLite 80.
+          Fixed a kernel panic if a port is open, `dgrp_daemon stop` is
+             executed, and a program then goes to write to the still
+             open port.
+             Now write returns EIO in that condition.
+          Fixed a select(2) problem in kernel 2.2.15 and later
+             of 2.2.x kernels which could cause programs like telnet or
+             ssh to appear to hang until a key is pressed.
+          Fixed a data loss problem which would manifest itself when exactly
+             four kilobytes of data were transmitted after a port was
+             opened.
+          Added /lib/modules/`uname -r`/kernel/drivers/char to the list of
+             locations that the kit will test for existence when trying to
+             find an appropriate location to install the driver module, in
+             response to testing in native 2.4 kernel-based distributions.
+
+    o Version 1.2-2: 
+
+          Increased support for Digi's ethernet-based serial connectivity
+             family; including Digi One, EtherLite, and PortServer products.
+          Added support for arbitrary integer baud rates via the "ditty-rp"
+             utility.
+          Detailed information about the type and version of configured
+            remote devices was made available via the "/proc/dgrp/nodeinfo"
+            file.
+          A memory corruption problem which would cause sysem instability
+             was eliminated.
+          Unexpected pauses and loss in port traffic as a result of a network
+             buffer overflow were resolved.
+
+    o Version 1.1-7: 
+
+          Added 2.4 kernel support.
+          Removed references to invalid email addresses.
+          Driver now handles Red Hat 7.0 (kgcc vs. gcc).
+          The GUI tool now displays the DCD signal when viewing ports.
+          RealPort ports now match other Linux serial ports for default
+             settings, as well as making all port settings "sticky".  As
+             a result of this change, CLOCAL is now on by default.
+          Configuration scripts remove the "/dev" files if a
+             PortServer is unconfigured.
+          Only physical line drops are detected as a "hangup" condition...
+             the driver would previously treat a change from CLOCAL to -CLOCAL
+             as a carrier transition.
+          Startup scripts are installed in "/etc/init.d" if
+             "/etc/rc.d/init.d" does not exist.
+          RPM installation will not "error out" if "chkconfig"
+             (a Red Hat tool) does not exist on the system.
+          A message was added to the RPM installation to communicate
+             to users whether the installation scripts were added or not.
+          On newer systems, RPM would inadvertently strip the driver module
+             of its symbols, causing it to fail.  The module is no longer
+             stripped.
+
+    o Version 1.0-0: 
+
+          Added a new proc file: /proc/dgrp/info.  This file allows one to
+             determine the value of a number of state variables associated
+             with the driver, including the driver revision.
+          Continued refinement of the GUI.  The GUI is now distributed
+             as a single file, rather than a collection of tcl files.
+          dgrp_cfg_node now does validity checking of its ID and COUNT
+             parameters.
+
+    o  Version 0.1-7:
+
+        A first pass at cleaning up the code was completed for beta release.
+        All driver build warnings have been fixed.  Appropriate part numbers
+            have been correctly placed in the appropriate documents.
+        A useful driver revision number is now placed in the console log
+            when the module is loaded.
+
+    o Version 0.1-5:
+
+       A minimum break time of 250ms is now enforced.
+       A PPP hang problem was resolved.
+       Continued enhancements of the packaging.
+
+    o Version 0.1-4:
+
+       Decided to install dgrp.o to the /usr/bin/dgrp directory, and then
+       link in the postinstall phase to a suitable /lib/modules/*/misc
+       directory.  This avoids the problem of having the path to dgrp.o
+       hardcoded in the spec file.
+
+    o Version 0.1-3:
+
+       Added new scripts to autoload the driver on system startup and
+       initialize any PortServers configured in /etc/dgrp.backing.store
+
+    o Version 0.1-1:
+
+       Pilot release in January 1999

@@ -1,0 +1,68 @@
+This  display is  updated at half second intervals,  and shows the current
+status and settings of the channel selected.
+
+The inner box shows the state of the RS-232 signals RTS,  CTS,  DSR,  DCD,
+DTR,  RI,  and  input  and  output flow control states (OFC and IFC).  The
+transmit and receive counters allow one to monitor those RS-232 "signals".
+
+An inactive signal is indicated by a line (_) under its name.
+
+An active signal is indicated by a block "X" under its name.
+
+If data is currently  being  transmitted  or  received,  the corresponding
+counter will change.
+
+
+Input Modes *Not a standard UNIX flag
+    IGNBRK   Ignore Break
+    BRKINT   Interrupt on Break
+    IGNPAR   Ignore parity errors
+    PARMRK   Mark parity errors
+    INPCK    Input parity check
+    ISTRIP   Strip input characters
+    ITOSS*   Toss IXANY characters
+    IXON     Enable start/stop output
+    IXANY    Restart output on any character
+    IXOFF    Enable start/stop input
+    IXONA*   Enable start/stop output Auxiliary
+
+Output Modes *Not a standard UNIX flag
+    XCASE*   Canonical upper/lower display
+    OLCUC    Map lower case to upper
+    ONLCR    Map NL to CR/NL
+    OCRNL    Map CR to NL
+    ONOCR    No CR output at column 0
+    ONLRET   NL performs CR function
+    OFILL    Use fill characters for delay
+    OFDEL    Fill character is DEL; otherwise NUL
+
+Control Modes
+    Baud Rate   Reflects the current rate.
+
+    Char Bits   5,6,7,8, or None.
+
+    Stop Bits   2,1, or None.
+
+    Parity      Even, Odd, Mark, Space or None.
+
+
+Loopback Test:  Selecting  the  "Loopback" option will cause the tool
+                to attempt to initiate a loopback test on the port.
+                The port must be in a "Closed" state for the loopback
+                test to work.
+
+
+Data Monitor:   The  "Data Monitor"  functionality  provides  a means
+                to  examine  the actual  transmitted / received  data
+                in close to real time, or to browse captured data.
+
+
+The Redraw (^L) option causes the tool to redisplay the entire screen,
+particularly useful with "dirty" connections in which the display becomes
+corrupt.
+
+The Print Screen (^P) option invokes a screen dump  to  the  default  file
+/tmp/dpalog.   If  another  file and/or path is desired, simply invoke the
+tool with the -l option.
+
+        e.g.       dparp -l <logfile>

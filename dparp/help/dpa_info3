@@ -1,0 +1,40 @@
+The  "Monitor Port Traffic" display allows for the near real-time
+monitoring of modem signals and data for a port.
+
+
+NOTE: Whenever  you  return to the "Capturing" screen,  the capture buffer
+      is cleared.  This includes when temporarily leaving  the  screen  to
+      examine this help file or taking a screen capture.
+
+NOTE: The most recent data is always to the left and above the highlighted
+      "cursor" (__).
+
+
+Since  the  space available to display the data is limited,  a few methods
+for changing the allocated space on the fly via keystrokes are allowed:
+
+   +  Grow the size of the "Rx Data" window when both are displayed
+
+   -  Shrink the size of the "Rx Data" window when both are displayed
+
+   R  Display the "Rx Data" window only
+
+   T  Display the "Tx Data" window only
+
+   B  Display both Rx and Tx
+
+
+The  "E"  key  will  bring  you to the "Examine" window in order to browse
+the captured data,  whereas the escape or  "Q"  will  return  you  to  the
+channel display.
+
+
+The Redraw (^L) option causes the tool to redisplay the entire screen,
+particularly useful with "dirty" connections in which the display becomes
+corrupt.
+
+The Print Screen (^P) option invokes a screen dump  to  the  default  file
+/tmp/dpalog.   If  another  file and/or path is desired, simply invoke the
+tool with the -l option.
+
+        e.g.       dparp -l <logfile>
