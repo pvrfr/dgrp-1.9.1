@@ -1,0 +1,77 @@
+If you close the connection to an ASYNC device that contunues to transmit
+then the PortServer seems to hang.   You can only recover by power cycling
+the PortServer.   Reloading the Realport driver will not recover the
+PortServer.
+
+The error manifests itself by returning an EAGAIN on open.   This is clearly 
+a bug in the Realport driver as EAGAIN is not a error than should be returned 
+from a failed open.
+
+This shows the PortServer firmware version.
+Device Description : PortServer TS 3 M MEI Version 82001725_T1 12/04/2007 
+
+The following are logs from the drpd daemon.   The daemon was run with teses flags;
+drpd -dddd -n DG <IP Address>
+The version contained in this GitHub archive has additional logging added that 
+produces the data dump of the traffic through the daemon.
+
+The "server" in these logs is the PortServer device using a TCPIP connection.
+The "network device" in these logs is the "/proc/dgrp/net" device.
+
+This log shows an open that fails with EAGAIN with the command:
+stty -F /dev/tty_dgrp_DG_1 -a
+
+Read 1 bytes from the  Server.
+0000: f0    .
+Read 3 bytes from network device
+0000: b1 0a 00    ...
+Write 3 bytes to  Server
+0000: b1 0a 00    ...
+Read 6 bytes from the  Server.
+0000: b1 0b 00 01 00 01    ......
+Read 1 bytes from the  Server.
+0000: f0    .
+Read 1 bytes from the  Server.
+0000: f0    .
+
+--------------------------------------------------
+
+This log shows an open that is successful with the command:
+stty -F /dev/tty_dgrp_DG_1 -a
+
+Read 1 bytes from the  Server.
+0000: f0    .
+Read 4 bytes from network device
+0000: f0 b1 0a 00    ....
+Write 4 bytes to  Server
+0000: f0 b1 0a 00    ....
+Read 6 bytes from the  Server.
+0000: b1 0b 00 00 00 01    ......
+Read 18 bytes from network device
+0000: b1 0e b1 2a 02 c0 f3 b1 10 b1 14 b1 16 b1 2c 03    ...*..........,.
+0010: 00 00    ..
+Write 18 bytes to  Server
+0000: b1 0e b1 2a 02 c0 f3 b1 10 b1 14 b1 16 b1 2c 03    ...*..........,.
+0010: 00 00    ..
+Read 49 bytes from the  Server.
+0000: b1 0f 00 00 00 00 b1 15 0f ff 0f ff b1 11 00 00    ................
+0010: 03 b1 17 01 02 01 00 2a 2a 00 1c 20 00 00 00 00    .......**.. ....
+0020: 00 f3 f3 00 00 00 00 00 00 00 00 00 00 00 00 00    ................
+0030: 00    .
+Read 43 bytes from network device
+0000: b1 30 03 ff 00 64 b1 2d 03 ff 0b ff b1 28 00 c0    .0...d.-.....(..
+0010: 04 b0 04 00 00 04 00 00 b1 2e 11 13 16 00 00 b1    ................
+0020: 2f 03 ff 00 64 b1 40 37 a1 0f ff    /...d.@7...
+Write 43 bytes to  Server
+0000: b1 30 03 ff 00 64 b1 2d 03 ff 0b ff b1 28 00 c0    .0...d.-.....(..
+0010: 04 b0 04 00 00 04 00 00 b1 2e 11 13 16 00 00 b1    ................
+0020: 2f 03 ff 00 64 b1 40 37 a1 0f ff    /...d.@7...
+Read 3 bytes from network device
+0000: b1 0a 03    ...
+Write 3 bytes to  Server
+0000: b1 0a 03    ...
+Read 6 bytes from the  Server.
+0000: b1 0b 03 00 00 01    ......
+Read 1 bytes from the  Server.
+0000: f0    .
+
